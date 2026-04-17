@@ -1,0 +1,19 @@
+[project]
+name = "axiomatic-engine"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "amisont", email = "134074972+amisont@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-duckdb>=1.10.1",
+    "dlt>=1.25.0",
+    "duckdb>=1.5.2",
+    "fastmcp>=3.2.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12.0"]
+build-backend = "uv_build"
