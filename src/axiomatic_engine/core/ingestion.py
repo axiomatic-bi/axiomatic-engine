@@ -22,7 +22,7 @@ class Ingestor:
         
         Triggers dlt loading using destination config from the warehouse adapter.
         """
-        LOGGER.info(f"Starting ingestion for source: {source.name}")
+        LOGGER.info("Starting ingestion for source: %s", source.name)
 
         pipeline = dlt.pipeline(
             pipeline_name=source.name,
@@ -33,5 +33,5 @@ class Ingestor:
             destination=self.warehouse.get_dlt_destination(),
             credentials=self.warehouse.get_dlt_credentials(),
         )
-        LOGGER.info(f"Ingestion complete for {source.name}. Status: {load_info}")
+        LOGGER.info("Ingestion complete for %s. Status: %s", source.name, load_info)
         return load_info

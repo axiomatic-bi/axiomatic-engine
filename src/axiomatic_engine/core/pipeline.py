@@ -40,23 +40,23 @@ class Pipeline:
         ]
 
         if not resources_to_fetch:
-            LOGGER.info(f"All resources already landed in storage")
+            LOGGER.info("All resources already landed in storage")
             return False
 
-        LOGGER.info(f"Landing {len(resources_to_fetch)} new resources to storage")
+        LOGGER.info("Landing %d new resources to storage", len(resources_to_fetch))
         return True
 
     def run(self, source: BaseSource, force_reload: bool = False):
         """
         The main execution loop. Orchestrates 'Landing' then 'Loading'.
         """
-        LOGGER.info(f"Initialising Axiomatic Pipeline: {source.name}")
+        LOGGER.info("Initialising Axiomatic Pipeline: %s", source.name)
         
         data_was_landed = self.land_raw_data(source)
 
         if data_was_landed or force_reload:
-            LOGGER.info(f"Ingesting data into the warehouse")
+            LOGGER.info("Ingesting data into the warehouse")
             load_info = self.ingestor.run(source=source)
-            LOGGER.info(f"Pipeline completed: {load_info}")
+            LOGGER.info("Pipeline completed: %s", load_info)
         else:
-            LOGGER.info(f"Warehouse is already up to date. Skipping load.")
+            LOGGER.info("Warehouse is already up to date. Skipping load.")
