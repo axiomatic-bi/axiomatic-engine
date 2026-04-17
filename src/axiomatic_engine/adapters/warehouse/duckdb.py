@@ -1,5 +1,6 @@
 from __future__ import annotations
 import duckdb
+from pathlib import Path
 from typing import Any
 from axiomatic_engine.contracts.warehouse import WarehouseProtocol
 from axiomatic_engine.contracts.storage import RawFileRef
@@ -11,6 +12,14 @@ class DuckDBWarehouse(WarehouseProtocol):
     """
     def __init__(self, path: str):
         self.path = path
+
+    def _ensure_local_parent_directory(self) -> None:
+        """
+        Ensure local DuckDB file destinations have an existing parent directory.
+        """
+        if self.path.startswith("md:") or self.path == ":memory:":
+            return
+        Path(self.path).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
     def get_connection_uri(self) -> str:
         """
@@ -31,6 +40,7 @@ class DuckDBWarehouse(WarehouseProtocol):
         """
         Return destination credentials expected by dlt for DuckDB loaders.
         """
+        self._ensure_local_parent_directory()
         return self.path
 
     def execute(self, query: str, parameters: Any = None) -> Any:
@@ -38,6 +48,7 @@ class DuckDBWarehouse(WarehouseProtocol):
         Executes raw SQL. Useful for maintenance, testing, and 
         running dbt-style transformations.
         """
+        self._ensure_local_parent_directory()
         with duckdb.connect(self.path) as conn:
             if parameters:
                 return conn.execute(query, parameters).fetchall()
@@ -53,6 +64,7 @@ class DuckDBWarehouse(WarehouseProtocol):
         Leverages DuckDB's native Parquet/CSV reading capabilities.
         """
         counts: dict[str, int] = {}
+        self._ensure_local_parent_directory()
         with duckdb.connect(self.path) as conn:
             conn.execute(f"CREATE SCHEMA IF NOT EXISTS {target_schema}")
             
