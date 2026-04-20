@@ -5,8 +5,9 @@
 The current implementation focuses on:
 
 - contract-first interfaces via Python `Protocol`s
+- typed runtime settings loaded from `AXIOMATIC_*` environment variables
 - a `dlt`-based ingestion path into a warehouse
-- a local-first adapter set (local storage + DuckDB warehouse)
+- a DuckDB-compatible warehouse stack (local DuckDB and MotherDuck)
 
 ## Current package structure
 
@@ -16,13 +17,20 @@ src/axiomatic_engine/
 │   ├── source.py      # Source and resource contracts
 │   ├── storage.py     # Raw storage contracts and file reference model
 │   └── warehouse.py   # Warehouse contracts
+├── config/
+│   ├── storage.py     # Typed storage settings
+│   ├── warehouse.py   # Typed warehouse settings
+│   └── engine.py      # Composite settings and env loading
 ├── sources/
 │   ├── base.py        # Base wrappers bridging contracts to dlt
 │   └── filesystem.py  # HTTP file source (CSV/TSV, optional gzip)
 ├── adapters/
 │   ├── factory.py                 # Adapter selection by Literal kind
 │   ├── storage/local.py           # Local filesystem storage adapter
-│   └── warehouse/duckdb.py        # DuckDB warehouse adapter
+│   └── warehouse/
+│       ├── base_duck.py           # Shared Duck-compatible warehouse logic
+│       ├── duckdb.py              # Local DuckDB warehouse adapter
+│       └── motherduck.py          # MotherDuck warehouse adapter
 └── core/
     ├── ingestion.py   # Ingestor runs dlt pipeline into warehouse
     └── pipeline.py    # Top-level orchestration
@@ -63,16 +71,29 @@ This keeps source-specific logic separate from orchestration concerns.
 - progress logging every N rows
 - `FileSystemSource`: exposes a resource map as `ResourceProtocol` instances
 
-### 4) Adapters and factory isolation
+### 4) Settings layer
+
+`config/engine.py` provides `EngineSettings` as the typed runtime contract.
+
+- `EngineSettings.from_env()` reads `AXIOMATIC_*` variables
+- storage and warehouse settings are modelled as dedicated dataclasses
+- `with_overrides(...)` enables CLI-over-env precedence in entrypoint scripts
+
+### 5) Adapters and factory isolation
 
 `adapters/factory.py` is the only place that instantiates adapter implementations:
 
 - storage: `LocalStorage` is implemented; `gcs` and `s3` are declared but not implemented
-- warehouse: `DuckDBWarehouse` is implemented; `motherduck` and `bigquery` are declared but not implemented
+- warehouse: `DuckDBWarehouse` and `MotherDuckWarehouse` are implemented; `bigquery` remains declared but not implemented
+
+Warehouse adapters use a shared base:
+
+- `DuckCompatibleWarehouseBase` centralises `execute(...)`, `load_from_references(...)`, and `dlt` destination handling
+- concrete adapters keep backend-specific URI and credential validation
 
 This preserves engine-agnostic extension points while keeping current runtime narrow.
 
-### 5) Core execution path
+### 6) Core execution path
 
 `core/ingestion.py`:
 
@@ -82,7 +103,7 @@ This preserves engine-agnostic extension points while keeping current runtime na
 
 `core/pipeline.py`:
 
-- `Pipeline` resolves storage/warehouse adapters via the factory
+- `Pipeline` accepts `EngineSettings` and resolves storage/warehouse adapters via the factory
 - `land_raw_data()` currently checks for already-landed resources by filename and returns a boolean
 - `run()` triggers ingestion when data was landed or when `force_reload=True`
 
@@ -100,13 +121,15 @@ Implemented now:
 
 - `FileSystemSource` for URL-based tabular ingestion
 - `LocalStorage` file listing through canonical `RawFileRef`
-- `DuckDBWarehouse` execution and bulk loading via `read_auto`
+- `DuckDBWarehouse` and `MotherDuckWarehouse` with shared Duck-compatible base behaviour
+- scheme-aware path normalisation for `read_auto(...)` inputs
+- typed `EngineSettings` with `AXIOMATIC_*` env loading and CLI override support
 - end-to-end `dlt` ingestion orchestration
 
 Declared extension points (not yet implemented):
 
 - storage adapters for `gcs`, `s3`
-- warehouse adapters for `motherduck`, `bigquery`
+- warehouse adapter for `bigquery`
 - full landing/write workflow in `Pipeline.land_raw_data()` (currently detection-oriented)
 
 ## Design constraints
@@ -114,3 +137,4 @@ Declared extension points (not yet implemented):
 - engine code remains domain-agnostic (no client or dataset hardcoding in engine modules)
 - adapter construction stays centralised in `adapters/factory.py`
 - contracts favour explicit naming and typed boundaries for maintainability
+- warehouse hierarchy decision is recorded in `docs/adr/001-warehouse-adapter-hierarchy.md`
