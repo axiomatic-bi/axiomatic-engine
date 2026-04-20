@@ -1,7 +1,6 @@
 from __future__ import annotations
 import logging
-from axiomatic_engine.contracts.storage import RawStorageKind
-from axiomatic_engine.contracts.warehouse import WarehouseKind
+from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.sources.base import BaseSource
 from axiomatic_engine.adapters.factory import get_storage_adapter, get_warehouse_adapter
 from axiomatic_engine.core.ingestion import Ingestor
@@ -18,14 +17,11 @@ class Pipeline:
     """
     
     def __init__(
-        self, 
-        storage_kind: RawStorageKind, 
-        storage_path: str, 
-        warehouse_kind: WarehouseKind, 
-        warehouse_path: str
+        self,
+        settings: EngineSettings,
     ):
-        self.storage = get_storage_adapter(kind=storage_kind, base_uri=storage_path)
-        self.warehouse = get_warehouse_adapter(kind=warehouse_kind, warehouse_path=warehouse_path)
+        self.storage = get_storage_adapter(settings=settings.storage)
+        self.warehouse = get_warehouse_adapter(settings=settings.warehouse)
         self.ingestor = Ingestor(warehouse=self.warehouse)
 
     def land_raw_data(self, source: BaseSource) -> bool:

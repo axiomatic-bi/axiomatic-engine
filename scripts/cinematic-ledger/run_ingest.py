@@ -1,4 +1,5 @@
 import logging
+from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.core.pipeline import Pipeline
 from axiomatic_engine.sources.filesystem import FileSystemSource
 
@@ -18,12 +19,8 @@ def main():
     )
 
     # 2. Setup the Engine (The "How")
-    engine = Pipeline(
-        storage_kind="local",
-        storage_path="./data/raw_vault",
-        warehouse_kind="duckdb",
-        warehouse_path="./data/imdb_analytics.duckdb"
-    )
+    settings = EngineSettings.from_env()
+    engine = Pipeline(settings=settings)
 
     # 3. Execute
     print("🚀 Axiomatic Engine: Initiating IMDb Production Run...")
