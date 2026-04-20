@@ -16,7 +16,7 @@ data/
 .cursor/
 
 # VS Code (default ignore)
-.vscode/*
+.vscode/
 
 # Optional shared VS Code files
 !.vscode/extensions.json
