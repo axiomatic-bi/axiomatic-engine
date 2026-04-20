@@ -1,3 +1,6 @@
+"""
+Run the Fake Store API pipeline
+"""
 import argparse
 import logging
 
