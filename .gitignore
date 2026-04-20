@@ -11,3 +11,13 @@ wheels/
 
 # Data
 data/
+
+# Local editor/agent state
+.cursor/
+
+# VS Code (default ignore)
+.vscode/*
+
+# Optional shared VS Code files
+!.vscode/extensions.json
+!.vscode/settings.json
