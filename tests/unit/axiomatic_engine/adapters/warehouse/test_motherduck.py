@@ -22,10 +22,14 @@ class MotherDuckWarehouseTests(unittest.TestCase):
 
     def test_get_connection_uri_and_credentials_use_md_path(self) -> None:
         warehouse = MotherDuckWarehouse(path="md:analytics", access_token="token")
+        destination = warehouse.get_dlt_destination()
 
-        self.assertEqual(warehouse.get_dlt_destination(), "motherduck")
+        self.assertEqual(getattr(destination, "destination_name", None), "motherduck")
         self.assertEqual(warehouse.get_connection_uri(), "md:analytics")
-        self.assertEqual(warehouse.get_dlt_credentials(), "md:analytics")
+        self.assertEqual(
+            warehouse.get_dlt_credentials(),
+            "md:analytics?motherduck_token=token",
+        )
 
 
 if __name__ == "__main__":

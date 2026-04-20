@@ -18,9 +18,10 @@ class WarehouseProtocol(Protocol):
         """
         ...
 
-    def get_dlt_destination(self) -> str:
+    def get_dlt_destination(self) -> Any:
         """
-        Return the dlt destination reference for this warehouse adapter.
+        Return the dlt destination reference or configured destination object
+        for this warehouse adapter.
         """
         ...
 
