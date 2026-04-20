@@ -1,98 +1,116 @@
-Your **Axiomatic Engine Architecture** documentation is ready. This Markdown file serves as the "source of truth" for your platform, outlining the philosophy, the tech stack, and the structural rules that ensure your engine remains modular and professional.
+# Axiomatic Engine Architecture
 
-I have formatted this for maximum readability so you can save it to your `docs/` folder or include it in your repository's `README.md`.
+## Purpose
+`axiomatic_engine` is a protocol-driven ingestion library that standardises how sources, storage backends, and warehouse backends interact.  
+The current implementation focuses on:
 
-***
+- contract-first interfaces via Python `Protocol`s
+- a `dlt`-based ingestion path into a warehouse
+- a local-first adapter set (local storage + DuckDB warehouse)
 
-# Axiomatic Engine: Technical Architecture Blueprint
-
-## 1. Philosophy & Principles
-The Axiomatic Engine is a **non-custodial** data platform designed for 2026 standards. It is built on three core pillars:
-
-1.  **Axiomatic Truth:** Data is refined from raw "sources" into "axioms"—self-evident, verified Star Schema models that serve as the single source of truth for the business.
-2.  **Non-Custodial Ownership:** The client owns the infrastructure (GCS/S3) and the data. The engine is a "guest" in their environment, ensuring they are never locked into a proprietary vendor.
-3.  **Separation of Storage and Compute:** We decouple the **Landing Zone** (where data lives) from the **Warehouse** (where data is processed) to ensure maximum flexibility and near-zero idle costs.
-
-
-
----
-
-## 2. The Axiomatic Stack
-To maintain high standards and low maintenance, the engine utilizes a fixed, high-performance stack:
-
-| Layer | Technology | Role |
-| :--- | :--- | :--- |
-| **Environment** | `uv` | Blazing fast Python dependency management and reproducibility. |
-| **Ingestion** | `dlt` | Automated data extraction with native schema evolution. |
-| **Storage (Bronze)**| **GCS / S3** | The immutable landing zone. Data is stored as date-partitioned **Parquet** files. |
-| **Warehouse (Silver)**| **DuckDB** | The "In-Process" analytical engine for local and cloud (MotherDuck) compute. |
-| **Transformation** | **dbt-duckdb** | SQL-based refinement into the "Golden Model" (Star Schema). |
-| **Semantic (Gold)** | **FastMCP** | The AI-ready bridge that exposes verified metrics to LLMs. |
-
----
-
-## 3. Structural Blueprint (Code Organisation)
-The repository is organised to separate "The Rules" from "The Tools."
+## Current package structure
 
 ```text
-axiomatic-engine/
-├── src/
-│   └── axiomatic_engine/
-│       ├── contracts/       # Pure Python Protocols. Zero external dependencies.
-│       │   ├── warehouse.py # Rules for what a warehouse must do.
-│       │   └── storage.py   # Rules for reading/writing raw data.
-│       ├── adapters/        # Specific technology implementations (The "Plugs").
-│       │   ├── duckdb.py    # Logic for DuckDB/MotherDuck.
-│       │   └── gcs.py       # Logic for Google Cloud Storage.
-│       ├── core/            # Framework Integration (The "Machinery").
-│       │   ├── ingestion.py # Generalised dlt wrappers.
-│       │   └── pipeline.py  # The main 'AxiomaticPipeline' orchestrator.
-│       └── semantic/        # The AI Bridge.
-│           └── mcp_server.py# FastMCP server definition.
-├── dbt_axiomatic/           # Private dbt package containing "Secret Sauce" macros.
-└── pyproject.toml           # Explicit dependency management.
+src/axiomatic_engine/
+├── contracts/
+│   ├── source.py      # Source and resource contracts
+│   ├── storage.py     # Raw storage contracts and file reference model
+│   └── warehouse.py   # Warehouse contracts
+├── sources/
+│   ├── base.py        # Base wrappers bridging contracts to dlt
+│   └── filesystem.py  # HTTP file source (CSV/TSV, optional gzip)
+├── adapters/
+│   ├── factory.py                 # Adapter selection by Literal kind
+│   ├── storage/local.py           # Local filesystem storage adapter
+│   └── warehouse/duckdb.py        # DuckDB warehouse adapter
+└── core/
+    ├── ingestion.py   # Ingestor runs dlt pipeline into warehouse
+    └── pipeline.py    # Top-level orchestration
 ```
 
----
+## Architectural layers
 
-## 4. The Data Lifecycle (Medallion Flow)
-The engine processes data through three distinct states to ensure integrity and auditability.
+### 1) Contracts (engine rules)
 
+The contracts define a stable boundary for extension:
 
+- `SourceProtocol` and `ResourceProtocol` in `contracts/source.py`
+- `RawStorageProtocol` and `RawFileRef` in `contracts/storage.py`
+- `WarehouseProtocol` in `contracts/warehouse.py`
 
-### Phase 1: Bronze (The Raw Truth)
-* **Action:** `dlt` extracts data from a **Source** (API, Scraper, DB).
-* **Result:** Data is landed in **Storage** as immutable, raw Parquet files.
-* **Standard:** No transformation is permitted at this stage.
+`Literal` types constrain available kinds:
 
-### Phase 2: Silver (The Axiomatic Clean)
-* **Action:** The **Warehouse Adapter** reads Parquet files into DuckDB.
-* **Result:** Data is cast to correct types, timestamps are converted to UTC, and column names are standardised.
-* **Standard:** This layer is the "Cleaned History."
+- `SourceKind`: `"api" | "filesystem" | "scraper" | "sharepoint"`
+- `RawStorageKind`: `"local" | "gcs" | "s3"`
+- `WarehouseKind`: `"duckdb" | "motherduck" | "bigquery"`
 
-### Phase 3: Gold (The Golden Model)
-* **Action:** `dbt` transforms Silver tables into **Fact** and **Dimension** tables.
-* **Result:** A verified **Star Schema** optimised for BI tools (Evidence.dev) and AI (FastMCP).
-* **Standard:** This is the only layer exposed to end-users.
+### 2) Source bridge (contracts -> dlt resources)
 
----
+`sources/base.py` provides:
 
-## 5. Deployment & Security
-The Axiomatic Engine is designed to run in a "Sovereign" environment.
+- `BaseResource`: wraps each resource and injects `_axiomatic_extracted_at_utc`
+- `BaseSource`: converts a `SourceProtocol` implementation into a `dlt.source`
 
-* **Execution:** Typically runs in **GitHub Actions** or a lightweight container.
-* **Credentials:** All secrets (API keys, Cloud tokens) are managed via Environment Variables. The engine never hardcodes or stores credentials.
-* **Persistence:** State is stored within the Warehouse or Storage layer itself, making the engine "stateless" and easy to recover.
+This keeps source-specific logic separate from orchestration concerns.
 
+### 3) Implemented source: filesystem
 
+`sources/filesystem.py` implements:
 
----
+- `FileSystemResource`: streams rows from URL-backed CSV/TSV files
+- delimiter inference (`.tsv` -> tab, otherwise comma)
+- compression inference (`.gz` -> gzip)
+- progress logging every N rows
+- `FileSystemSource`: exposes a resource map as `ResourceProtocol` instances
 
-## 6. Maintenance & ADRs
-* **Naming:** Follows British English spelling (`catalogue`, `standardise`).
-* **Documentation:** Architecture Decision Records (ADRs) are stored in `docs/adr/` to explain major technical choices.
-* **Versioning:** The engine is versioned as a library, allowing clients to stay on stable releases while development continues.
+### 4) Adapters and factory isolation
 
-***
+`adapters/factory.py` is the only place that instantiates adapter implementations:
 
-**Would you like to start by generating the code for the `contracts/storage.py` protocol to define how the engine should "talk" to your GCS or local files?**
+- storage: `LocalStorage` is implemented; `gcs` and `s3` are declared but not implemented
+- warehouse: `DuckDBWarehouse` is implemented; `motherduck` and `bigquery` are declared but not implemented
+
+This preserves engine-agnostic extension points while keeping current runtime narrow.
+
+### 5) Core execution path
+
+`core/ingestion.py`:
+
+- `Ingestor.run()` creates a `dlt.pipeline`
+- executes `pipeline.run(source.to_dlt(), destination=..., credentials=...)`
+- destination and credentials come from the selected warehouse adapter
+
+`core/pipeline.py`:
+
+- `Pipeline` resolves storage/warehouse adapters via the factory
+- `land_raw_data()` currently checks for already-landed resources by filename and returns a boolean
+- `run()` triggers ingestion when data was landed or when `force_reload=True`
+
+## Data flow in the current version
+
+1. A source implementation yields record dictionaries through `ResourceProtocol.read()`.
+2. `BaseResource` augments each record with extraction metadata.
+3. `BaseSource.to_dlt()` builds a `dlt` source from wrapped resources.
+4. `Ingestor` runs `dlt` into the selected warehouse destination.
+5. The warehouse adapter provides connection semantics and optional direct-load utilities.
+
+## Implemented versus planned capabilities
+
+Implemented now:
+
+- `FileSystemSource` for URL-based tabular ingestion
+- `LocalStorage` file listing through canonical `RawFileRef`
+- `DuckDBWarehouse` execution and bulk loading via `read_auto`
+- end-to-end `dlt` ingestion orchestration
+
+Declared extension points (not yet implemented):
+
+- storage adapters for `gcs`, `s3`
+- warehouse adapters for `motherduck`, `bigquery`
+- full landing/write workflow in `Pipeline.land_raw_data()` (currently detection-oriented)
+
+## Design constraints
+
+- engine code remains domain-agnostic (no client or dataset hardcoding in engine modules)
+- adapter construction stays centralised in `adapters/factory.py`
+- contracts favour explicit naming and typed boundaries for maintainability
