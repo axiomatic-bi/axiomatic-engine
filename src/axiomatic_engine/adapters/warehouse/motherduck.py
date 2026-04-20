@@ -31,6 +31,12 @@ class MotherDuckWarehouse(DuckCompatibleWarehouseBase):
         """
         return self.path
 
+    def get_dlt_destination(self) -> str:
+        """
+        Route dlt loads through the MotherDuck destination adapter.
+        """
+        return "motherduck"
+
     def get_dlt_credentials(self) -> Any:
         """
         Return dlt credentials for MotherDuck without embedding token in URI.
