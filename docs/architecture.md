@@ -22,8 +22,10 @@ src/axiomatic_engine/
 │   ├── warehouse.py   # Typed warehouse settings
 │   └── engine.py      # Composite settings and env loading
 ├── sources/
-│   ├── base.py        # Base wrappers bridging contracts to dlt
-│   └── filesystem.py  # HTTP file source (CSV/TSV, optional gzip)
+│   ├── base.py             # Base wrappers bridging contracts to dlt
+│   ├── file/
+│   │   └── http_stream.py # HTTP file source (CSV/TSV, optional gzip)
+│   └── rest/              # Generic REST source package
 ├── adapters/
 │   ├── factory.py                 # Adapter selection by Literal kind
 │   ├── storage/local.py           # Local filesystem storage adapter
@@ -63,13 +65,13 @@ This keeps source-specific logic separate from orchestration concerns.
 
 ### 3) Implemented source: filesystem
 
-`sources/filesystem.py` implements:
+`sources/file/http_stream.py` implements:
 
-- `FileSystemResource`: streams rows from URL-backed CSV/TSV files
+- `HttpStreamResource`: streams rows from URL-backed CSV/TSV files
 - delimiter inference (`.tsv` -> tab, otherwise comma)
 - compression inference (`.gz` -> gzip)
 - progress logging every N rows
-- `FileSystemSource`: exposes a resource map as `ResourceProtocol` instances
+- `HttpStreamSource`: exposes a resource map as `ResourceProtocol` instances
 
 ### 4) Settings layer
 
@@ -119,7 +121,8 @@ This preserves engine-agnostic extension points while keeping current runtime na
 
 Implemented now:
 
-- `FileSystemSource` for URL-based tabular ingestion
+- `HttpStreamSource` for URL-based tabular ingestion
+- `RestApiSource` and `RestApiResource` for generic API ingestion flows
 - `LocalStorage` file listing through canonical `RawFileRef`
 - `DuckDBWarehouse` and `MotherDuckWarehouse` with shared Duck-compatible base behaviour
 - scheme-aware path normalisation for `read_auto(...)` inputs

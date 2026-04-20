@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.core.pipeline import Pipeline
-from axiomatic_engine.sources.filesystem import FileSystemSource
+from axiomatic_engine.sources.file.http_stream import HttpStreamSource
 
 # Standardise logging for the run
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -38,7 +38,7 @@ def main():
         "title_ratings": "https://datasets.imdbws.com/title.ratings.tsv.gz",
     }
     
-    source = FileSystemSource(
+    source = HttpStreamSource(
         name="imdb_bronze_ingest",
         resource_map=imdb_datasets
     )

@@ -1,26 +1,30 @@
-import logging
-import requests
-import gzip
 import csv
+import gzip
 import io
+import logging
 
-from typing import Iterable, Any, Literal, BinaryIO, IO, cast
-from axiomatic_engine.sources.base import BaseSource
+from typing import Any, BinaryIO, IO, Iterable, Literal, cast
+
+import requests
+
 from axiomatic_engine.contracts.source import ResourceProtocol, SourceKind
+from axiomatic_engine.sources.base import BaseSource
 
 LOGGER = logging.getLogger(__name__)
 
 CompressionKind = Literal["gzip", "none"]
 DEFAULT_PROGRESS_LOG_EVERY_ROWS = 100_000
 
-class FileSystemResource (ResourceProtocol):
+
+class HttpStreamResource(ResourceProtocol):
     """
-    Implementation of ResourceProtocol for downloading files from a URL.
+    Implementation of ResourceProtocol for downloading delimited files over HTTP.
     """
+
     def __init__(
-        self, 
-        name: str, 
-        url: str, 
+        self,
+        name: str,
+        url: str,
         delimiter: str | None = None,
         compression: CompressionKind | None = None,
         progress_log_every_rows: int = DEFAULT_PROGRESS_LOG_EVERY_ROWS,
@@ -66,11 +70,11 @@ class FileSystemResource (ResourceProtocol):
             self.delimiter,
         )
         row_count = 0
-        with requests.get(self.url, stream=True) as r:
-            r.raise_for_status()
-            
-            with self._get_stream(cast(BinaryIO, r.raw)) as f:
-                reader = csv.DictReader(f, delimiter=self.delimiter)
+        with requests.get(self.url, stream=True) as response:
+            response.raise_for_status()
+
+            with self._get_stream(cast(BinaryIO, response.raw)) as stream:
+                reader = csv.DictReader(stream, delimiter=self.delimiter)
                 for row in reader:
                     row_count += 1
                     if (
@@ -90,20 +94,21 @@ class FileSystemResource (ResourceProtocol):
             f"{row_count:,}",
         )
 
-class FileSystemSource(BaseSource):
+
+class HttpStreamSource(BaseSource):
     """
-    A collection of file-based resources.
+    A collection of HTTP-streamed delimited file resources.
     """
+
     def __init__(self, name: str, resource_map: dict[str, str]):
         self.name = name
         self.kind: SourceKind = "filesystem"
         self._resource_map = resource_map
-        
-        super().__init__(source_logic=self) 
+        super().__init__(source_logic=self)
 
     def get_resources(self) -> list[ResourceProtocol]:
         return [
-            FileSystemResource(name, url) 
+            HttpStreamResource(name, url)
             for name, url in self._resource_map.items()
         ]
 
