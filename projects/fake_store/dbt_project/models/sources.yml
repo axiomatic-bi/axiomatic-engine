@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: products
+      - name: users
+      - name: carts
+      - name: carts__products
