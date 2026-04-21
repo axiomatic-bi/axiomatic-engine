@@ -15,6 +15,13 @@ class EngineSettingsTests(unittest.TestCase):
                 "AXIOMATIC_WAREHOUSE_PATH": "md:analytics",
                 "AXIOMATIC_WAREHOUSE_SCHEMA": "bronze",
                 "AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN": "secret-token",
+                "AXIOMATIC_TRANSFORM_ENABLED": "true",
+                "AXIOMATIC_TRANSFORM_BACKEND": "dbt",
+                "AXIOMATIC_DBT_PROJECT_DIR": "./projects/fake-store/dbt",
+                "AXIOMATIC_DBT_PROFILES_DIR": "./projects/fake-store/dbt",
+                "AXIOMATIC_DBT_PROFILE_NAME": "fake_store",
+                "AXIOMATIC_DBT_TARGET": "dev",
+                "AXIOMATIC_DBT_RUN_TESTS": "false",
             }
         )
 
@@ -24,6 +31,13 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.warehouse.path, "md:analytics")
         self.assertEqual(settings.warehouse.schema_name, "bronze")
         self.assertEqual(settings.warehouse.motherduck_access_token, "secret-token")
+        self.assertTrue(settings.transform.enabled)
+        self.assertEqual(settings.transform.kind, "dbt")
+        self.assertEqual(settings.transform.dbt_project_dir, "./projects/fake-store/dbt")
+        self.assertEqual(settings.transform.dbt_profiles_dir, "./projects/fake-store/dbt")
+        self.assertEqual(settings.transform.dbt_profile_name, "fake_store")
+        self.assertEqual(settings.transform.dbt_target, "dev")
+        self.assertFalse(settings.transform.dbt_run_tests)
 
     def test_from_env_uses_defaults_when_values_missing(self) -> None:
         settings = EngineSettings.from_env({})
@@ -34,6 +48,13 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.warehouse.path, "./data/warehouse.duckdb")
         self.assertEqual(settings.warehouse.schema_name, "bronze")
         self.assertIsNone(settings.warehouse.motherduck_access_token)
+        self.assertFalse(settings.transform.enabled)
+        self.assertEqual(settings.transform.kind, "dbt")
+        self.assertIsNone(settings.transform.dbt_project_dir)
+        self.assertIsNone(settings.transform.dbt_profiles_dir)
+        self.assertIsNone(settings.transform.dbt_profile_name)
+        self.assertIsNone(settings.transform.dbt_target)
+        self.assertTrue(settings.transform.dbt_run_tests)
 
     def test_from_env_rejects_unknown_kinds(self) -> None:
         with self.assertRaises(ValueError):
@@ -41,6 +62,15 @@ class EngineSettingsTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             EngineSettings.from_env({"AXIOMATIC_WAREHOUSE_KIND": "snowflake"})
+
+        with self.assertRaises(ValueError):
+            EngineSettings.from_env({"AXIOMATIC_TRANSFORM_BACKEND": "airflow"})
+
+        with self.assertRaises(ValueError):
+            EngineSettings.from_env({"AXIOMATIC_TRANSFORM_ENABLED": "sometimes"})
+
+        with self.assertRaises(ValueError):
+            EngineSettings.from_env({"AXIOMATIC_TRANSFORM_ENABLED": "true"})
 
     def test_with_overrides_updates_selected_fields_only(self) -> None:
         base = EngineSettings.from_env(
@@ -56,6 +86,13 @@ class EngineSettingsTests(unittest.TestCase):
         overridden = base.with_overrides(
             warehouse_kind="motherduck",
             warehouse_path="md:analytics",
+            transform_enabled=True,
+            transform_kind="dbt",
+            dbt_project_dir="./projects/fake-store/dbt",
+            dbt_profiles_dir="./projects/fake-store/dbt",
+            dbt_profile_name="fake_store",
+            dbt_target="prod",
+            dbt_run_tests=False,
         )
 
         self.assertEqual(overridden.storage.kind, "local")
@@ -66,6 +103,13 @@ class EngineSettingsTests(unittest.TestCase):
             overridden.warehouse.motherduck_access_token,
             "secret-token",
         )
+        self.assertTrue(overridden.transform.enabled)
+        self.assertEqual(overridden.transform.kind, "dbt")
+        self.assertEqual(overridden.transform.dbt_project_dir, "./projects/fake-store/dbt")
+        self.assertEqual(overridden.transform.dbt_profiles_dir, "./projects/fake-store/dbt")
+        self.assertEqual(overridden.transform.dbt_profile_name, "fake_store")
+        self.assertEqual(overridden.transform.dbt_target, "prod")
+        self.assertFalse(overridden.transform.dbt_run_tests)
 
 
 if __name__ == "__main__":

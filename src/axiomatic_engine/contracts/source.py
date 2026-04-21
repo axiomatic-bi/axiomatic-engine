@@ -1,7 +1,24 @@
 from __future__ import annotations
-from typing import Literal, Protocol, Iterable, Any, runtime_checkable
+from dataclasses import dataclass
+from typing import Any, Iterable, Literal, Protocol, runtime_checkable
 
 SourceKind = Literal["api", "filesystem", "scraper", "sharepoint"]
+WriteDisposition = Literal["append", "replace", "merge"]
+SchemaEvolutionMode = Literal["auto", "strict", "discard"]
+
+
+@dataclass(frozen=True)
+class ResourceLoadHints:
+    """
+    Optional ingestion hints for a single resource.
+
+    These values are source-agnostic contracts that adapters may map onto
+    destination-specific capabilities.
+    """
+
+    write_disposition: WriteDisposition | None = None
+    primary_key: str | list[str] | None = None
+    schema_evolution_mode: SchemaEvolutionMode | None = None
 
 @runtime_checkable
 class ResourceProtocol(Protocol):
@@ -14,6 +31,12 @@ class ResourceProtocol(Protocol):
         """
         Yields raw records from the source.
         Explicitly returns a dictionary to ensure compatibility with dlt.
+        """
+        ...
+
+    def get_load_hints(self) -> ResourceLoadHints | None:
+        """
+        Optionally returns resource-level ingestion hints.
         """
         ...
 

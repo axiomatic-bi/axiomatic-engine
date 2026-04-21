@@ -1,6 +1,7 @@
 # Python-generated files
 __pycache__/
 *.py[oc]
+.pytest_cache/
 build/
 dist/
 wheels/
@@ -11,6 +12,15 @@ wheels/
 
 # Data
 data/
+!data/.gitkeep
+*.duckdb
+*.duckdb.wal
+*.duckdb.shm
+*.tmp/
+
+# Logs
+*.log
+logs/
 
 # Local editor/agent state
 .cursor/
@@ -22,5 +32,14 @@ data/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# Environment variables
+# Environment variables and secret patterns
 .env
+*-credentials.json
+secrets/
+credentials/
+*.pem
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini

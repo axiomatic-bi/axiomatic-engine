@@ -1,8 +1,8 @@
 from __future__ import annotations
 import dlt
 from datetime import datetime, timezone
-from typing import Iterable, Any
-from axiomatic_engine.contracts.source import SourceProtocol, ResourceProtocol
+from typing import Any, Iterable, cast
+from axiomatic_engine.contracts.source import ResourceLoadHints, ResourceProtocol, SourceProtocol
 
 class BaseResource:
     """
@@ -41,14 +41,51 @@ class BaseSource:
         """
         Converts the internal logic into a native dlt source object.
         """
+        schema_evolution_map: dict[str, str] = {
+            "auto": "evolve",
+            "strict": "freeze",
+            "discard": "discard_value",
+        }
+
+        def _get_resource_load_hints(resource: ResourceProtocol) -> ResourceLoadHints | None:
+            get_load_hints = getattr(resource, "get_load_hints", None)
+            if callable(get_load_hints):
+                return cast(ResourceLoadHints | None, get_load_hints())
+            return None
+
+        def _build_resource_kwargs(load_hints: ResourceLoadHints | None) -> dict[str, Any]:
+            if load_hints is None:
+                return {}
+
+            if (
+                load_hints.write_disposition == "merge"
+                and load_hints.primary_key in (None, "", [])
+            ):
+                raise ValueError(
+                    "Resource configured with merge disposition must provide primary_key."
+                )
+
+            resource_kwargs: dict[str, Any] = {}
+            if load_hints.write_disposition is not None:
+                resource_kwargs["write_disposition"] = load_hints.write_disposition
+            if load_hints.primary_key is not None:
+                resource_kwargs["primary_key"] = load_hints.primary_key
+            if load_hints.schema_evolution_mode is not None:
+                resource_kwargs["schema_contract"] = schema_evolution_map[
+                    load_hints.schema_evolution_mode
+                ]
+            return resource_kwargs
+
         def _wrap_resource(resource: ResourceProtocol):
             wrapper = BaseResource(resource)
+            load_hints = _get_resource_load_hints(resource)
+            resource_kwargs = _build_resource_kwargs(load_hints)
 
             def _resource_iter() -> Iterable[dict[str, Any]]:
                 yield from wrapper()
 
             _resource_iter.__name__ = resource.name
-            return dlt.resource(_resource_iter, name=resource.name)
+            return dlt.resource(_resource_iter, name=resource.name, **resource_kwargs)
 
         resources = [
             _wrap_resource(res)

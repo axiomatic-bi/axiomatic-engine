@@ -1,0 +1,255 @@
+version: 2
+
+models:
+  - name: dim_products
+    description: "SCD2 product dimension with validity ranges and version keys."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - product_id
+              - valid_from_utc
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valid_to_utc is null or valid_to_utc > valid_from_utc"
+    columns:
+      - name: product_version_key
+        description: "Surrogate key for a single product version."
+        data_tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: "Natural product business key."
+        data_tests:
+          - not_null
+      - name: title
+        description: "Product title for this version."
+      - name: description
+        description: "Product description for this version."
+      - name: category
+        description: "Product category for this version."
+      - name: image
+        description: "Product image URL for this version."
+      - name: valid_from_utc
+        description: "Version validity start timestamp (inclusive)."
+        data_tests:
+          - not_null
+      - name: valid_to_utc
+        description: "Version validity end timestamp (exclusive), null when current."
+      - name: is_current
+        description: "True when this is the latest active version."
+        data_tests:
+          - not_null
+      - name: price
+        description: "Point-in-time product price for this version."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: rating_rate
+        description: "Average product rating score for this version."
+      - name: rating_count
+        description: "Number of ratings for this version."
+      - name: attribute_hash
+        description: "Hash of SCD2 tracked attributes used for change detection."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier contributing this dimension row."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp inherited from staging at version start."
+        data_tests:
+          - not_null
+
+  - name: dim_users
+    description: "SCD2 user dimension with flattened profile and address attributes."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - user_id
+              - valid_from_utc
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valid_to_utc is null or valid_to_utc > valid_from_utc"
+    columns:
+      - name: user_version_key
+        description: "Surrogate key for a single user version."
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "Natural user business key."
+        data_tests:
+          - not_null
+      - name: email
+        description: "User email for this version."
+      - name: username
+        description: "Username for this version."
+      - name: phone
+        description: "Phone number for this version."
+      - name: name_firstname
+        description: "First name for this version."
+      - name: name_lastname
+        description: "Last name for this version."
+      - name: address_city
+        description: "City for this version."
+      - name: address_street
+        description: "Street for this version."
+      - name: address_number
+        description: "Street number for this version."
+      - name: address_postcode
+        description: "Postcode for this version."
+      - name: address_geolocation_lat
+        description: "Latitude for this version."
+      - name: address_geolocation_long
+        description: "Longitude for this version."
+      - name: valid_from_utc
+        description: "Version validity start timestamp (inclusive)."
+        data_tests:
+          - not_null
+      - name: valid_to_utc
+        description: "Version validity end timestamp (exclusive), null when current."
+      - name: is_current
+        description: "True when this is the latest active version."
+        data_tests:
+          - not_null
+      - name: attribute_hash
+        description: "Hash of SCD2 tracked attributes used for change detection."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier contributing this dimension row."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp inherited from staging at version start."
+        data_tests:
+          - not_null
+
+  - name: dim_date
+    description: "Date dimension generated from cart event dates."
+    columns:
+      - name: date_key
+        description: "Integer date key in YYYYMMDD format."
+        data_tests:
+          - unique
+          - not_null
+      - name: date_day
+        description: "Date value."
+        data_tests:
+          - not_null
+      - name: year_number
+        description: "Calendar year."
+        data_tests:
+          - not_null
+      - name: quarter_number
+        description: "Calendar quarter number."
+        data_tests:
+          - not_null
+      - name: month_number
+        description: "Calendar month number."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 1 and 12"
+      - name: month_name
+        description: "Calendar month name."
+        data_tests:
+          - not_null
+      - name: day_of_month
+        description: "Day number within month."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 1 and 31"
+      - name: day_of_week_number
+        description: "Day of week number where Sunday=0 and Saturday=6."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 6"
+      - name: day_of_week_name
+        description: "Day of week name."
+        data_tests:
+          - not_null
+      - name: is_weekend
+        description: "True when day is Saturday or Sunday."
+        data_tests:
+          - not_null
+
+  - name: fct_cart_items
+    description: "Fact table at one row per product per cart with SCD2 version keys resolved at extraction time."
+    columns:
+      - name: cart_item_key
+        description: "Unique identifier for each cart line item."
+        data_tests:
+          - unique
+          - not_null
+      - name: cart_id
+        description: "Degenerate dimension key for cart header."
+        data_tests:
+          - not_null
+      - name: product_version_key
+        description: "Resolved SCD2 product version key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_version_key
+      - name: user_version_key
+        description: "Resolved SCD2 user version key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_version_key
+      - name: date_key
+        description: "Date dimension foreign key derived from cart_created_at_utc."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: quantity
+        description: "Quantity of product in cart line item."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: price_at_sale
+        description: "Resolved point-in-time product price from product SCD2 version."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: line_amount
+        description: "Extended amount calculated as quantity multiplied by price_at_sale."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: cart_created_at_utc
+        description: "Original cart event timestamp from source."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier for cart line extraction."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp used to resolve SCD2 version keys."
+        data_tests:
+          - not_null

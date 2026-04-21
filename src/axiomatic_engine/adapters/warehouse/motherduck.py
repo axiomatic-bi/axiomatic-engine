@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote_plus
+
+import dlt
 
 from axiomatic_engine.adapters.warehouse.base_duck import DuckCompatibleWarehouseBase
 
@@ -31,6 +34,13 @@ class MotherDuckWarehouse(DuckCompatibleWarehouseBase):
         """
         return self.path
 
+    def get_dlt_destination(self) -> Any:
+        """
+        Route dlt loads through a configured MotherDuck destination object.
+        """
+        credentials = self.get_dlt_credentials()
+        return dlt.destinations.motherduck(credentials=credentials)
+
     def get_dlt_credentials(self) -> Any:
         """
         Return dlt credentials for MotherDuck without embedding token in URI.
@@ -39,4 +49,6 @@ class MotherDuckWarehouse(DuckCompatibleWarehouseBase):
             raise ValueError(
                 "Missing AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN for motherduck warehouse."
             )
-        return self.path
+        separator = "&" if "?" in self.path else "?"
+        token = quote_plus(self.access_token)
+        return f"{self.path}{separator}motherduck_token={token}"

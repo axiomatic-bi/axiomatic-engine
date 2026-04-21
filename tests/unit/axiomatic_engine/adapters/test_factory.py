@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import unittest
 
-from axiomatic_engine.adapters.factory import get_storage_adapter, get_warehouse_adapter
+from axiomatic_engine.adapters.factory import (
+    get_storage_adapter,
+    get_transformation_adapter,
+    get_warehouse_adapter,
+)
 from axiomatic_engine.adapters.storage.local import LocalStorage
+from axiomatic_engine.adapters.transformation.dbt_adapter import DbtTransformationAdapter
 from axiomatic_engine.adapters.warehouse.duckdb import DuckDBWarehouse
 from axiomatic_engine.adapters.warehouse.motherduck import MotherDuckWarehouse
+from axiomatic_engine.config.engine import TransformSettings
 from axiomatic_engine.config.storage import StorageSettings
 from axiomatic_engine.config.warehouse import WarehouseSettings
 
@@ -32,6 +38,43 @@ class FactoryTests(unittest.TestCase):
             )
         )
         self.assertIsInstance(adapter, MotherDuckWarehouse)
+
+    def test_get_transformation_adapter_returns_dbt_adapter_for_motherduck(self) -> None:
+        adapter = get_transformation_adapter(
+            transform_settings=TransformSettings(
+                enabled=True,
+                kind="dbt",
+                dbt_project_dir="./projects/fake-store/dbt",
+                dbt_profiles_dir="./projects/fake-store/dbt",
+                dbt_profile_name="fake_store",
+                dbt_target="dev",
+                dbt_run_tests=True,
+            ),
+            warehouse_settings=WarehouseSettings(
+                kind="motherduck",
+                path="md:analytics",
+                motherduck_access_token="token",
+            ),
+        )
+        self.assertIsInstance(adapter, DbtTransformationAdapter)
+
+    def test_get_transformation_adapter_rejects_not_enabled_warehouses(self) -> None:
+        with self.assertRaises(NotImplementedError):
+            get_transformation_adapter(
+                transform_settings=TransformSettings(
+                    enabled=True,
+                    kind="dbt",
+                    dbt_project_dir="./projects/fake-store/dbt",
+                    dbt_profiles_dir="./projects/fake-store/dbt",
+                    dbt_profile_name="fake_store",
+                    dbt_target=None,
+                    dbt_run_tests=True,
+                ),
+                warehouse_settings=WarehouseSettings(
+                    kind="bigquery",
+                    path="project.dataset",
+                ),
+            )
 
 
 if __name__ == "__main__":

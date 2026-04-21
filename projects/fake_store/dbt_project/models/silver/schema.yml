@@ -1,0 +1,161 @@
+version: 2
+
+models:
+  - name: stg_products
+    description: "Typed staging model for Fake Store products."
+    columns:
+      - name: product_id
+        description: "Natural product identifier from source API."
+        data_tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Product title."
+      - name: description
+        description: "Product description text."
+      - name: category
+        description: "Product category from source."
+      - name: image
+        description: "Product image URL."
+      - name: price
+        description: "Current list price from the API snapshot."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: rating_rate
+        description: "Average rating score."
+      - name: rating_count
+        description: "Number of ratings."
+      - name: _dlt_id
+        description: "DLT technical row identifier."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp injected by the engine."
+        data_tests:
+          - not_null
+
+  - name: stg_users
+    description: "Typed staging model for Fake Store users."
+    columns:
+      - name: user_id
+        description: "Natural user identifier from source API."
+        data_tests:
+          - unique
+          - not_null
+      - name: email
+        description: "User email address."
+      - name: phone
+        description: "User phone number."
+      - name: username
+        description: "Source username."
+      - name: name_firstname
+        description: "User first name."
+      - name: name_lastname
+        description: "User last name."
+      - name: address_city
+        description: "City from nested source address."
+      - name: address_street
+        description: "Street from nested source address."
+      - name: address_number
+        description: "Street number from nested source address."
+      - name: address_zipcode
+        description: "Postcode from nested source address."
+      - name: address_geolocation_lat
+        description: "Latitude from nested source geolocation."
+      - name: address_geolocation_long
+        description: "Longitude from nested source geolocation."
+      - name: _dlt_id
+        description: "DLT technical row identifier."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp injected by the engine."
+        data_tests:
+          - not_null
+
+  - name: stg_carts
+    description: "Typed staging model for Fake Store cart headers."
+    columns:
+      - name: cart_id
+        description: "Natural cart identifier from source API."
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "User who owns the cart."
+        data_tests:
+          - not_null
+      - name: cart_created_at_utc
+        description: "Cart event timestamp from source."
+        data_tests:
+          - not_null
+      - name: _dlt_id
+        description: "DLT technical key for joining nested cart items."
+        data_tests:
+          - unique
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier."
+        data_tests:
+          - not_null
+      - name: source_version
+        description: "Source payload version field from carts endpoint."
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp injected by the engine."
+        data_tests:
+          - not_null
+
+  - name: stg_carts__products
+    description: "Typed staging model for cart line items from nested products arrays."
+    columns:
+      - name: cart_item_dlt_id
+        description: "DLT technical identifier for each cart line item."
+        data_tests:
+          - unique
+          - not_null
+      - name: cart_dlt_id
+        description: "Parent cart DLT key used to join to stg_carts."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_carts')
+                field: _dlt_id
+      - name: cart_item_index
+        description: "Array index of line item within cart payload."
+        data_tests:
+          - not_null
+      - name: product_id
+        description: "Product identifier included in the cart line."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_products')
+                field: product_id
+      - name: quantity
+        description: "Quantity requested for the product in the cart line."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: _dlt_load_id
+        description: "DLT load batch identifier."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Inherited extraction timestamp from the parent cart record."
+        data_tests:
+          - not_null
