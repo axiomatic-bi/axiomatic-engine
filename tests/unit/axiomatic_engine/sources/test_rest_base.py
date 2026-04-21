@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from axiomatic_engine.contracts.rest import RestRequestContext
+from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.sources.rest.base import RestApiResource, RestApiResourceDefinition
 
 
@@ -38,6 +39,23 @@ class _TwoPagePaginationStrategy:
 
 
 class RestApiResourceTests(unittest.TestCase):
+    def test_get_load_hints_returns_definition_hints(self) -> None:
+        expected_hints = ResourceLoadHints(
+            write_disposition="merge",
+            primary_key="id",
+            schema_evolution_mode="strict",
+        )
+        resource = RestApiResource(
+            base_url="https://example.com",
+            definition=RestApiResourceDefinition(
+                name="hinted",
+                endpoint_path="items",
+                load_hints=expected_hints,
+            ),
+        )
+
+        self.assertEqual(resource.get_load_hints(), expected_hints)
+
     @patch("axiomatic_engine.sources.rest.base.requests.request")
     def test_read_applies_normaliser_before_yield(self, mock_request) -> None:
         mock_request.return_value = _FakeResponse(

@@ -7,6 +7,7 @@ import logging
 from dotenv import load_dotenv
 
 from axiomatic_engine.config.engine import EngineSettings
+from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.core.pipeline import Pipeline
 from axiomatic_engine.sources.rest.base import RestApiResourceDefinition, RestApiSource
 
@@ -72,9 +73,32 @@ def _parse_args() -> argparse.Namespace:
 
 def _build_fake_store_source(base_url: str) -> RestApiSource:
     resources = [
-        RestApiResourceDefinition(name="products", endpoint_path="products"),
-        RestApiResourceDefinition(name="carts", endpoint_path="carts"),
-        RestApiResourceDefinition(name="users", endpoint_path="users"),
+        RestApiResourceDefinition(
+            name="products",
+            endpoint_path="products",
+            load_hints=ResourceLoadHints(
+                write_disposition="merge",
+                primary_key="id",
+                schema_evolution_mode="auto",
+            ),
+        ),
+        RestApiResourceDefinition(
+            name="carts",
+            endpoint_path="carts",
+            load_hints=ResourceLoadHints(
+                write_disposition="replace",
+                schema_evolution_mode="auto",
+            ),
+        ),
+        RestApiResourceDefinition(
+            name="users",
+            endpoint_path="users",
+            load_hints=ResourceLoadHints(
+                write_disposition="merge",
+                primary_key="id",
+                schema_evolution_mode="auto",
+            ),
+        ),
     ]
     return RestApiSource(
         name="fake_store_bronze_ingest",

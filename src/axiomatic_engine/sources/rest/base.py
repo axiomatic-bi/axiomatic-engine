@@ -13,7 +13,7 @@ from axiomatic_engine.contracts.rest import (
     RestRequestContext,
     ResourceNormaliserProtocol,
 )
-from axiomatic_engine.contracts.source import ResourceProtocol, SourceKind
+from axiomatic_engine.contracts.source import ResourceLoadHints, ResourceProtocol, SourceKind
 from axiomatic_engine.sources.base import BaseSource
 from axiomatic_engine.sources.rest.auth import NoAuthHook
 from axiomatic_engine.sources.rest.pagination import NoPaginationStrategy
@@ -55,6 +55,7 @@ class RestApiResourceDefinition:
         default_factory=NoPaginationStrategy
     )
     resource_normaliser: ResourceNormaliserProtocol = _identity_resource_normaliser
+    load_hints: ResourceLoadHints | None = None
 
 
 class RestApiResource(ResourceProtocol):
@@ -81,6 +82,9 @@ class RestApiResource(ResourceProtocol):
             "base_url": self.base_url,
             "http_method": self.definition.http_method,
         }
+
+    def get_load_hints(self) -> ResourceLoadHints | None:
+        return self.definition.load_hints
 
     def _build_initial_request_context(self) -> RestRequestContext:
         endpoint_url = urljoin(f"{self.base_url.rstrip('/')}/", self.definition.endpoint_path)
