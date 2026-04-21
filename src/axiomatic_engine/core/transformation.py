@@ -25,7 +25,7 @@ class Transformer:
         project_dir: str,
     ) -> None:
         self.adapter = adapter
-        self.warehouse_kind = warehouse_kind
+        self.warehouse_kind: WarehouseKind = warehouse_kind
         self.project_dir = Path(project_dir)
 
     def run(self) -> None:
