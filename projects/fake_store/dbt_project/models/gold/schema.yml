@@ -183,3 +183,73 @@ models:
         description: "True when day is Saturday or Sunday."
         data_tests:
           - not_null
+
+  - name: fct_cart_items
+    description: "Fact table at one row per product per cart with SCD2 version keys resolved at extraction time."
+    columns:
+      - name: cart_item_key
+        description: "Unique identifier for each cart line item."
+        data_tests:
+          - unique
+          - not_null
+      - name: cart_id
+        description: "Degenerate dimension key for cart header."
+        data_tests:
+          - not_null
+      - name: product_version_key
+        description: "Resolved SCD2 product version key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_version_key
+      - name: user_version_key
+        description: "Resolved SCD2 user version key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_version_key
+      - name: date_key
+        description: "Date dimension foreign key derived from cart_created_at_utc."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: quantity
+        description: "Quantity of product in cart line item."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "quantity > 0"
+      - name: price_at_sale
+        description: "Resolved point-in-time product price from product SCD2 version."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "price_at_sale >= 0"
+      - name: line_amount
+        description: "Extended amount calculated as quantity multiplied by price_at_sale."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "line_amount >= 0"
+      - name: cart_created_at_utc
+        description: "Original cart event timestamp from source."
+        data_tests:
+          - not_null
+      - name: _dlt_load_id
+        description: "DLT load batch identifier for cart line extraction."
+        data_tests:
+          - not_null
+      - name: _axiomatic_extracted_at_utc
+        description: "Extraction timestamp used to resolve SCD2 version keys."
+        data_tests:
+          - not_null
