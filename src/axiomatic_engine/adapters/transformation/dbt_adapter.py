@@ -37,6 +37,9 @@ class DbtTransformationAdapter(TransformationProtocol):
         environment = dict(request.environment)
         environment["AXIOMATIC_DBT_ADAPTER_PACKAGE"] = self.adapter_package
         environment["AXIOMATIC_DBT_EXPECTED_PROFILE_TYPE"] = self.expected_profile_type
+        axiomatic_md_token = environment.get("AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN")
+        if axiomatic_md_token and not environment.get("MOTHERDUCK_TOKEN"):
+            environment["MOTHERDUCK_TOKEN"] = axiomatic_md_token
 
         commands: list[list[str]] = [self._build_command(subcommand="run")]
         if self.run_tests:
