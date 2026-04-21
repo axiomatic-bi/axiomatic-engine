@@ -70,7 +70,7 @@ class BaseSourceTests(unittest.TestCase):
         self.assertEqual(kwargs["name"], "items")
         self.assertEqual(kwargs["write_disposition"], "merge")
         self.assertEqual(kwargs["primary_key"], "id")
-        self.assertEqual(kwargs["schema_contract"], {"schema_evolution": "strict"})
+        self.assertEqual(kwargs["schema_contract"], "freeze")
 
     def test_to_dlt_merge_without_primary_key_raises(self) -> None:
         invalid_resource = _FakeResource(

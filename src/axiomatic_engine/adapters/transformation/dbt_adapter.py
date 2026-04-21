@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
@@ -69,16 +71,24 @@ class DbtTransformationAdapter(TransformationProtocol):
         )
 
     def _build_command(self, subcommand: str) -> list[str]:
-        command = [
-            "dbt",
-            subcommand,
-            "--project-dir",
-            str(self.project_dir),
-            "--profiles-dir",
-            str(self.profiles_dir),
-            "--profile",
-            self.profile_name,
-        ]
+        resolved_project_dir = str(self.project_dir.resolve())
+        resolved_profiles_dir = str(self.profiles_dir.resolve())
+
+        if shutil.which("dbt") is None:
+            command = [sys.executable, "-m", "dbt.cli.main", subcommand]
+        else:
+            command = ["dbt", subcommand]
+
+        command.extend(
+            [
+                "--project-dir",
+                resolved_project_dir,
+                "--profiles-dir",
+                resolved_profiles_dir,
+                "--profile",
+                self.profile_name,
+            ]
+        )
         if self.target is not None:
             command.extend(["--target", self.target])
         return command

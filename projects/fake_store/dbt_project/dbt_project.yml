@@ -21,5 +21,3 @@ models:
       +materialized: view
     gold:
       +materialized: table
-    analytics:
-      +materialized: view

@@ -23,7 +23,7 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "price >= 0"
+                expression: ">= 0"
       - name: rating_rate
         description: "Average rating score."
       - name: rating_count
@@ -150,7 +150,7 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "quantity > 0"
+                expression: "> 0"
       - name: _dlt_load_id
         description: "DLT load batch identifier."
         data_tests:

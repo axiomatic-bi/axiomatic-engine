@@ -36,6 +36,18 @@ The project stays domain-aware while the engine stays domain-agnostic:
 - engine code handles ingestion orchestration and transformation orchestration
 - sensitive values come from environment variables, not hardcoded paths or tokens
 
+## Bronze Load Policies
+
+This project configures resource-level ingestion hints for deterministic reruns:
+
+- `products`: `merge` on primary key `id`
+- `users`: `merge` on primary key `id`
+- `carts`: `replace`
+
+Schema evolution is set to `auto` for all three resources. New source fields are accepted in bronze and can be promoted through silver/gold when needed.
+
+Because `merge` and `replace` are used, dlt also creates a transient/staging schema (for example `bronze_staging`) in MotherDuck while applying load operations. This is expected engine behaviour and supports safe upsert/replace semantics into the final `bronze` tables.
+
 ## Environment Variables
 
 Copy `.env.example` to a local `.env` file and set values for your environment.
@@ -56,6 +68,16 @@ python run_pipeline.py
 ```
 
 When enabled, the pipeline performs ingestion first, then runs dbt transformations.
+
+For local validation from the project folder:
+
+```bash
+../../.venv/Scripts/dbt.exe deps --project-dir ./dbt_project --profiles-dir ./dbt_project --profile fake_store
+../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
+../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
+```
+
+The pair of ingestion runs above should be idempotent for `products` and `users` and deterministic for `carts`.
 
 ## Development Notes
 

@@ -46,7 +46,7 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "price >= 0"
+                expression: ">= 0"
       - name: rating_rate
         description: "Average product rating score for this version."
       - name: rating_count
@@ -156,7 +156,7 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "month_number between 1 and 12"
+                expression: "between 1 and 12"
       - name: month_name
         description: "Calendar month name."
         data_tests:
@@ -167,14 +167,14 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "day_of_month between 1 and 31"
+                expression: "between 1 and 31"
       - name: day_of_week_number
         description: "Day of week number where Sunday=0 and Saturday=6."
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "day_of_week_number between 0 and 6"
+                expression: "between 0 and 6"
       - name: day_of_week_name
         description: "Day of week name."
         data_tests:
@@ -226,21 +226,21 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "quantity > 0"
+                expression: "> 0"
       - name: price_at_sale
         description: "Resolved point-in-time product price from product SCD2 version."
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "price_at_sale >= 0"
+                expression: ">= 0"
       - name: line_amount
         description: "Extended amount calculated as quantity multiplied by price_at_sale."
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
-                expression: "line_amount >= 0"
+                expression: ">= 0"
       - name: cart_created_at_utc
         description: "Original cart event timestamp from source."
         data_tests:

@@ -54,11 +54,7 @@ resolved_user_version as (
     from resolved_product_version as base
     left join {{ ref('dim_users') }} as users
         on base.user_id = users.user_id
-       and base.as_of_extracted_at_utc >= users.valid_from_utc
-       and (
-            users.valid_to_utc is null
-            or base.as_of_extracted_at_utc < users.valid_to_utc
-       )
+       and users.is_current
 )
 
 select

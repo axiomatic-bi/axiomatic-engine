@@ -41,6 +41,12 @@ class BaseSource:
         """
         Converts the internal logic into a native dlt source object.
         """
+        schema_evolution_map: dict[str, str] = {
+            "auto": "evolve",
+            "strict": "freeze",
+            "discard": "discard_value",
+        }
+
         def _get_resource_load_hints(resource: ResourceProtocol) -> ResourceLoadHints | None:
             get_load_hints = getattr(resource, "get_load_hints", None)
             if callable(get_load_hints):
@@ -65,7 +71,9 @@ class BaseSource:
             if load_hints.primary_key is not None:
                 resource_kwargs["primary_key"] = load_hints.primary_key
             if load_hints.schema_evolution_mode is not None:
-                resource_kwargs["schema_contract"] = {"schema_evolution": load_hints.schema_evolution_mode}
+                resource_kwargs["schema_contract"] = schema_evolution_map[
+                    load_hints.schema_evolution_mode
+                ]
             return resource_kwargs
 
         def _wrap_resource(resource: ResourceProtocol):
