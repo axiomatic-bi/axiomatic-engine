@@ -163,10 +163,10 @@ def _parse_warehouse_kind(value: str) -> WarehouseKind:
 
 
 def _parse_transform_kind(value: str) -> TransformationKind:
-    if value not in {"dbt", "sql_file"}:
+    if value not in {"dbt"}:
         raise ValueError(
             "Unsupported AXIOMATIC_TRANSFORM_BACKEND. "
-            "Expected one of: dbt, sql_file."
+            "Expected one of: dbt."
         )
     return cast(TransformationKind, value)
 

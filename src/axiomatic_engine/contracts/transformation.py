@@ -6,7 +6,7 @@ from typing import Literal, Protocol, runtime_checkable
 
 from axiomatic_engine.contracts.warehouse import WarehouseKind
 
-TransformationKind = Literal["dbt", "sql_file"]
+TransformationKind = Literal["dbt"]
 TransformationStatus = Literal["succeeded", "failed"]
 
 

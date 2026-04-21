@@ -48,14 +48,12 @@ def get_transformation_adapter(
     """
     Return the requested transformation adapter.
     """
-    if transform_settings.kind == "dbt":
-        return _build_dbt_transformation_adapter(
-            transform_settings=transform_settings,
-            warehouse_settings=warehouse_settings,
-        )
-    if transform_settings.kind == "sql_file":
-        raise NotImplementedError("sql_file transformation backend is not implemented yet")
-    raise ValueError(f"Unsupported transformation kind: {transform_settings.kind}")
+    if transform_settings.kind != "dbt":
+        raise ValueError(f"Unsupported transformation kind: {transform_settings.kind}")
+    return _build_dbt_transformation_adapter(
+        transform_settings=transform_settings,
+        warehouse_settings=warehouse_settings,
+    )
 
 
 def _build_dbt_transformation_adapter(

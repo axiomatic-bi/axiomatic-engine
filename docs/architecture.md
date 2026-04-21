@@ -58,7 +58,7 @@ The contracts define a stable boundary for extension:
 
 - `SourceKind`: `"api" | "filesystem" | "scraper" | "sharepoint"`
 - `RawStorageKind`: `"local" | "gcs" | "s3"`
-- `TransformationKind`: `"dbt" | "sql_file"`
+- `TransformationKind`: `"dbt"`
 - `WarehouseKind`: `"duckdb" | "motherduck" | "bigquery"`
 
 ### 2) Source bridge (contracts -> dlt resources)
@@ -93,7 +93,7 @@ This keeps source-specific logic separate from orchestration concerns.
 `adapters/factory.py` is the only place that instantiates adapter implementations:
 
 - storage: `LocalStorage` is implemented; `gcs` and `s3` are declared but not implemented
-- transformation: `DbtTransformationAdapter` is implemented; `sql_file` is declared but not implemented
+- transformation: `DbtTransformationAdapter` is implemented (dbt-first)
 - warehouse: `DuckDBWarehouse` and `MotherDuckWarehouse` are implemented; `bigquery` remains declared but not implemented
 
 Warehouse adapters use a shared base:
@@ -149,7 +149,7 @@ Implemented now:
 Declared extension points (not yet implemented):
 
 - storage adapters for `gcs`, `s3`
-- transformation backend for `sql_file`
+- additional transformation backends beyond dbt
 - warehouse adapter for `bigquery`
 - full landing/write workflow in `Pipeline.land_raw_data()` (currently detection-oriented)
 
