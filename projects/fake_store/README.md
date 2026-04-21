@@ -14,12 +14,14 @@ The pipeline follows a medallion flow:
 ## Project Structure
 
 ```text
-projects/fake-store/
-├── sql/
-│   ├── .env.example
-│   ├── silver/
-│   ├── gold/
-│   └── analytics/
+projects/fake_store/
+├── .env.example
+├── dbt_project/
+│   └── models/
+│       ├── sources.yml
+│       ├── silver/
+│       ├── gold/
+│       └── analytics/
 ├── src/
 │   ├── definitions.py
 │   └── normalisers.py
@@ -36,7 +38,7 @@ The project stays domain-aware while the engine stays domain-agnostic:
 
 ## Environment Variables
 
-Copy `sql/.env.example` to a local `.env` file and set values for your environment.
+Copy `.env.example` to a local `.env` file and set values for your environment.
 
 Key variables:
 
