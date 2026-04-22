@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: bronze
-    schema: bronze
+    schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
     tables:
       - name: products
       - name: users
