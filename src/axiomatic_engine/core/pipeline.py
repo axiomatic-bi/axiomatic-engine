@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from axiomatic_engine.adapters.factory import (
     get_storage_adapter,
@@ -19,17 +20,15 @@ LOGGER = logging.getLogger(__name__)
 class Pipeline:
     """
     The central orchestrator of the Axiomatic Engine.
-    
-    It manages the three-step dance of modern data engineering:
-    1. Landing: Extracting raw files to the Storage Layer (Non-Custodial).
-    2. Loading: Moving data from Storage to the Warehouse Layer (Compute).
-    3. Transforming: Building analytical models in the warehouse.
+
+    It manages the ingestion and optional transformation stages.
     """
-    
+
     def __init__(self, settings: EngineSettings) -> None:
         self.storage = get_storage_adapter(settings=settings.storage)
         self.warehouse = get_warehouse_adapter(settings=settings.warehouse)
         self.warehouse_kind: WarehouseKind = settings.warehouse.kind
+        self.schema_settings = settings.schema
         self.ingestor = Ingestor(warehouse=self.warehouse)
         self.transform_settings = settings.transform
         self.transformer: Transformer | None = None
@@ -48,33 +47,48 @@ class Pipeline:
                 project_dir=dbt_project_dir,
             )
 
-    def land_raw_data(self, source: BaseSource) -> bool:
-        """
-        Ensures all source resources are present in the Storage Layer.
-        Returns True if new data was landed, False if everything was already cached.
-        """
-        existing_files = {f.file_name for f in self.storage.list_files()}
-        resources_to_fetch = [res for res in source.get_resources() if res.name not in existing_files]
+    def _existing_storage_resource_names(self) -> set[str]:
+        names: set[str] = set()
+        for file_ref in self.storage.list_files():
+            names.add(file_ref.file_name)
+            names.add(Path(file_ref.file_name).stem)
+        return names
 
-        if not resources_to_fetch:
-            LOGGER.info("All resources already landed in storage")
-            return False
+    def should_run_ingestion(self, source: BaseSource, force_reload: bool) -> bool:
+        if force_reload:
+            LOGGER.info("Force reload enabled. Ingestion will run.")
+            return True
 
-        LOGGER.info("Landing %d new resources to storage", len(resources_to_fetch))
-        return True
+        existing_resource_names = self._existing_storage_resource_names()
+        missing_resources = [
+            resource.name
+            for resource in source.get_resources()
+            if resource.name not in existing_resource_names
+        ]
+
+        if missing_resources:
+            LOGGER.info(
+                "Ingestion will run. Resources not detected in storage cache: %s",
+                ", ".join(missing_resources),
+            )
+            return True
+
+        LOGGER.info("Ingestion skipped. Storage cache suggests no new resources.")
+        return False
 
     def run(self, source: BaseSource, force_reload: bool = False) -> None:
         """
-        The main execution loop. Orchestrates 'Landing' then 'Loading'.
+        The main execution loop.
         """
         LOGGER.info("Initialising Axiomatic Pipeline: %s", source.name)
 
-        data_was_landed = self.land_raw_data(source)
-
-        if data_was_landed or force_reload:
+        if self.should_run_ingestion(source=source, force_reload=force_reload):
             LOGGER.info("Ingesting data into the warehouse")
-            load_info = self.ingestor.run(source=source)
-            LOGGER.info("Ingestion completed: %s", load_info)
+            self.ingestor.run(
+                source=source,
+                dataset_name=self.schema_settings.bronze,
+            )
+            LOGGER.info("Ingestion completed successfully.")
         else:
             LOGGER.info("Warehouse is already up to date. Skipping load.")
 

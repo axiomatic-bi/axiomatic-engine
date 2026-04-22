@@ -1,7 +1,7 @@
 # Axiomatic Engine Architecture
 
 ## Purpose
-`axiomatic_engine` is a protocol-driven data pipeline library that standardises how sources, storage backends, warehouse backends, and transformation backends interact.  
+`axiomatic_engine` is a protocol-driven data pipeline library that standardises how sources, storage backends, warehouse backends, and transformation backends interact.
 The current implementation focuses on:
 
 - contract-first interfaces via Python `Protocol`s
@@ -20,11 +20,14 @@ src/axiomatic_engine/
 │   ├── transformation.py # Transformation contracts
 │   └── warehouse.py   # Warehouse contracts
 ├── config/
-│   ├── storage.py     # Typed storage settings
-│   ├── warehouse.py   # Typed warehouse settings
+│   ├── storage/       # Typed storage settings by backend + builder
+│   ├── warehouse/     # Typed warehouse settings by backend + builder
+│   ├── schema.py      # Medallion schema settings
+│   ├── transform.py   # Transformation settings and validation
 │   └── engine.py      # Composite settings and env loading
 ├── sources/
 │   ├── base.py             # Base wrappers bridging contracts to dlt
+│   ├── factory.py          # Typed source definitions and source routing
 │   ├── file/
 │   │   └── http_stream.py # HTTP file source (CSV/TSV, optional gzip)
 │   └── rest/              # Generic REST source package
@@ -56,7 +59,7 @@ The contracts define a stable boundary for extension:
 
 `Literal` types constrain available kinds:
 
-- `SourceKind`: `"api" | "filesystem" | "scraper" | "sharepoint"`
+- `SourceKind`: `"rest_api" | "http_file"`
 - `RawStorageKind`: `"local" | "gcs" | "s3"`
 - `TransformationKind`: `"dbt"`
 - `WarehouseKind`: `"duckdb" | "motherduck" | "bigquery"`
@@ -70,22 +73,34 @@ The contracts define a stable boundary for extension:
 
 This keeps source-specific logic separate from orchestration concerns.
 
-### 3) Implemented source: filesystem
+### 3) Implemented sources
 
-`sources/file/http_stream.py` implements:
+`sources/file/http_stream.py` implements `HttpStreamSource` (`kind="http_file"`):
 
 - `HttpStreamResource`: streams rows from URL-backed CSV/TSV files
 - delimiter inference (`.tsv` -> tab, otherwise comma)
-- compression inference (`.gz` -> gzip)
+- compression inference (`.gz` -> gzip, query string ignored)
 - progress logging every N rows
-- `HttpStreamSource`: exposes a resource map as `ResourceProtocol` instances
+- per-resource timeout and load-hint support through typed definitions
+
+`sources/rest/base.py` implements `RestApiSource` (`kind="rest_api"`):
+
+- resource definitions with auth hook, pagination strategy, and normaliser contracts
+- typed request context construction and payload extraction rules
+
+`sources/factory.py` provides typed source definition routing:
+
+- `RestApiSourceDefinition` -> `RestApiSource`
+- `HttpFileSourceDefinition` -> `HttpStreamSource`
+- keeps direct source constructors available as an escape hatch
 
 ### 4) Settings layer
 
 `config/engine.py` provides `EngineSettings` as the typed runtime contract.
 
 - `EngineSettings.from_env()` reads `AXIOMATIC_*` variables
-- storage, warehouse, and transformation settings are modelled as dedicated dataclasses
+- storage and warehouse settings are built from backend-specific typed settings packages
+- schema and transformation settings are modelled as dedicated dataclasses
 - `with_overrides(...)` enables CLI-over-env precedence in entrypoint scripts
 
 ### 5) Adapters and factory isolation
@@ -114,8 +129,8 @@ This preserves engine-agnostic extension points while keeping current runtime na
 `core/pipeline.py`:
 
 - `Pipeline` accepts `EngineSettings` and resolves storage/warehouse adapters via the factory
-- `land_raw_data()` currently checks for already-landed resources by filename and returns a boolean
-- `run()` triggers ingestion when data was landed or when `force_reload=True`
+- `should_run_ingestion(...)` decides ingestion execution using force-reload override and storage-cache heuristics
+- `run()` triggers ingestion when gating returns true and always honours `force_reload=True`
 - when transformation is enabled, `Pipeline` delegates to `Transformer`
 
 `core/transformation.py`:
@@ -123,6 +138,7 @@ This preserves engine-agnostic extension points while keeping current runtime na
 - `Transformer.run()` builds a `TransformationRequest`
 - executes through `TransformationProtocol` adapter
 - normalises stage failure semantics for pipeline orchestration
+- dbt adapter execution applies an environment allowlist and redacts token-like values from failure output
 
 ## Data flow in the current version
 
@@ -151,7 +167,7 @@ Declared extension points (not yet implemented):
 - storage adapters for `gcs`, `s3`
 - additional transformation backends beyond dbt
 - warehouse adapter for `bigquery`
-- full landing/write workflow in `Pipeline.land_raw_data()` (currently detection-oriented)
+- full landing/write workflow before ingestion (current gating is cache-detection-oriented)
 
 ## Design constraints
 

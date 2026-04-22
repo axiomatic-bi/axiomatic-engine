@@ -216,7 +216,7 @@ class RestApiSource(BaseSource):
         resources: list[RestApiResourceDefinition],
     ) -> None:
         self.name = name
-        self.kind: SourceKind = "api"
+        self.kind: SourceKind = "rest_api"
         self.base_url = base_url
         self._definitions = resources
         super().__init__(source_logic=self)

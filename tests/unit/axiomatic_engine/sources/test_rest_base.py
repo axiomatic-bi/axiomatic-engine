@@ -5,7 +5,11 @@ from unittest.mock import patch
 
 from axiomatic_engine.contracts.rest import RestRequestContext
 from axiomatic_engine.contracts.source import ResourceLoadHints
-from axiomatic_engine.sources.rest.base import RestApiResource, RestApiResourceDefinition
+from axiomatic_engine.sources.rest.base import (
+    RestApiResource,
+    RestApiResourceDefinition,
+    RestApiSource,
+)
 
 
 class _FakeResponse:
@@ -127,6 +131,24 @@ class RestApiResourceTests(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             _ = list(resource.read())
+
+
+class RestApiSourceTests(unittest.TestCase):
+    def test_source_exposes_expected_kind_and_resources(self) -> None:
+        source = RestApiSource(
+            name="fake_store",
+            base_url="https://fakestoreapi.com",
+            resources=[
+                RestApiResourceDefinition(name="products", endpoint_path="products"),
+            ],
+        )
+
+        resources = source.get_resources()
+
+        self.assertEqual(source.kind, "rest_api")
+        self.assertEqual(source.get_incremental_key(), None)
+        self.assertEqual(len(resources), 1)
+        self.assertEqual(resources[0].name, "products")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment:
+      name: pypi
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync project dependencies
+        run: uv sync --group dev --group test --frozen
+
+      - name: Run package quality gate
+        run: uv run --group dev --group test python scripts/quality_gate.py
+
+      - name: Build package distributions
+        run: uv build --no-sources
+
+      - name: Upload release distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dist-${{ github.run_id }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

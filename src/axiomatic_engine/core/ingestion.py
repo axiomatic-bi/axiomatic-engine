@@ -9,18 +9,18 @@ LOGGER = logging.getLogger(__name__)
 class Ingestor:
     """
     The Axiomatic worker responsible for executing data movement.
-    
-    It orchestrates the flow from a BaseSource implementation into 
+
+    It orchestrates the flow from a BaseSource implementation into
      a WarehouseProtocol implementation using dlt.
     """
-    
+
     def __init__(self, warehouse: WarehouseProtocol):
         self.warehouse = warehouse
 
-    def run(self, source: BaseSource, dataset_name: str = "bronze"):
+    def run(self, source: BaseSource, dataset_name: str):
         """
         Executes the ingestion pipeline.
-        
+
         Triggers dlt loading using destination config from the warehouse adapter.
         """
         LOGGER.info("Starting ingestion for source: %s", source.name)
@@ -42,9 +42,8 @@ class Ingestor:
         )
         duration_s = perf_counter() - load_start
         LOGGER.info(
-            "Ingestion complete for %s in %.1fs. Status: %s",
+            "Ingestion complete for %s in %.1fs.",
             source.name,
             duration_s,
-            load_info,
         )
         return load_info

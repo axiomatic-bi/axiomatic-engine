@@ -4,5 +4,5 @@ fake_store:
     dev:
       type: duckdb
       path: "{{ env_var('AXIOMATIC_WAREHOUSE_PATH', './data/warehouse.duckdb') }}"
-      schema: "{{ env_var('AXIOMATIC_WAREHOUSE_SCHEMA', 'bronze') }}"
+      schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
       threads: 4

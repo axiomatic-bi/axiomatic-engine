@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 
 from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.core.pipeline import Pipeline
-from axiomatic_engine.sources.file.http_stream import HttpStreamSource
+from axiomatic_engine.sources.factory import build_source
+from axiomatic_engine.sources.file.http_stream import (
+    HttpFileResourceDefinition,
+    HttpFileSourceDefinition,
+)
 
 # Standardise logging for the run
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -23,24 +27,34 @@ def _parse_args() -> argparse.Namespace:
         default=None,
     )
     parser.add_argument("--warehouse-path", default=None)
-    parser.add_argument("--warehouse-schema", default=None)
+    parser.add_argument("--schema-bronze", default=None)
+    parser.add_argument("--schema-silver", default=None)
+    parser.add_argument("--schema-gold", default=None)
+    parser.add_argument("--schema-analytics", default=None)
     parser.add_argument("--force-reload", action="store_true")
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = _parse_args()
     load_dotenv()
 
     # 1. Setup the Source (The "What")
-    imdb_datasets = {
-        "title_basics": "https://datasets.imdbws.com/title.basics.tsv.gz",
-        "title_ratings": "https://datasets.imdbws.com/title.ratings.tsv.gz",
-    }
-    
-    source = HttpStreamSource(
-        name="imdb_bronze_ingest",
-        resource_map=imdb_datasets
+    source = build_source(
+        HttpFileSourceDefinition(
+            kind="http_file",
+            name="imdb_bronze_ingest",
+            resources=[
+                HttpFileResourceDefinition(
+                    name="title_basics",
+                    url="https://datasets.imdbws.com/title.basics.tsv.gz",
+                ),
+                HttpFileResourceDefinition(
+                    name="title_ratings",
+                    url="https://datasets.imdbws.com/title.ratings.tsv.gz",
+                ),
+            ],
+        )
     )
 
     # 2. Setup the Engine (The "How")
@@ -49,7 +63,10 @@ def main():
         storage_path=args.storage_path,
         warehouse_kind=args.warehouse_kind,
         warehouse_path=args.warehouse_path,
-        warehouse_schema_name=args.warehouse_schema,
+        bronze_schema_name=args.schema_bronze,
+        silver_schema_name=args.schema_silver,
+        gold_schema_name=args.schema_gold,
+        analytics_schema_name=args.schema_analytics,
     )
     engine = Pipeline(settings=settings)
 

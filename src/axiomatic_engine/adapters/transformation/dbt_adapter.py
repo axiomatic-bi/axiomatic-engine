@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -34,12 +35,7 @@ class DbtTransformationAdapter(TransformationProtocol):
         self._validate_request(request=request)
         start = perf_counter()
 
-        environment = dict(request.environment)
-        environment["AXIOMATIC_DBT_ADAPTER_PACKAGE"] = self.adapter_package
-        environment["AXIOMATIC_DBT_EXPECTED_PROFILE_TYPE"] = self.expected_profile_type
-        axiomatic_md_token = environment.get("AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN")
-        if axiomatic_md_token and not environment.get("MOTHERDUCK_TOKEN"):
-            environment["MOTHERDUCK_TOKEN"] = axiomatic_md_token
+        environment = self._build_runtime_environment(request_environment=request.environment)
 
         commands: list[list[str]] = [self._build_command(subcommand="run")]
         if self.run_tests:
@@ -62,7 +58,7 @@ class DbtTransformationAdapter(TransformationProtocol):
                     details={
                         "command": " ".join(command),
                         "return_code": str(completed.returncode),
-                        "stderr": completed.stderr.strip(),
+                        "stderr": self._sanitise_error_output(completed.stderr),
                     },
                 )
 
@@ -101,3 +97,56 @@ class DbtTransformationAdapter(TransformationProtocol):
             raise NotImplementedError(
                 "DbtTransformationAdapter currently supports only motherduck warehouse."
             )
+
+    def _build_runtime_environment(self, request_environment: dict[str, str]) -> dict[str, str]:
+        allowed_prefixes = (
+            "AXIOMATIC_",
+            "DBT_",
+            "MOTHERDUCK_",
+            "GOOGLE_",
+            "AWS_",
+        )
+        allowed_keys = {
+            "PATH",
+            "PATHEXT",
+            "SYSTEMROOT",
+            "COMSPEC",
+            "HOME",
+            "USERPROFILE",
+            "TMP",
+            "TEMP",
+            "PYTHONPATH",
+            "VIRTUAL_ENV",
+            "WINDIR",
+        }
+        environment: dict[str, str] = {}
+        for key, value in request_environment.items():
+            if key in allowed_keys or key.startswith(allowed_prefixes):
+                environment[key] = value
+
+        environment["AXIOMATIC_DBT_ADAPTER_PACKAGE"] = self.adapter_package
+        environment["AXIOMATIC_DBT_EXPECTED_PROFILE_TYPE"] = self.expected_profile_type
+
+        axiomatic_md_token = environment.get("AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN")
+        if axiomatic_md_token and not environment.get("MOTHERDUCK_TOKEN"):
+            environment["MOTHERDUCK_TOKEN"] = axiomatic_md_token
+
+        return environment
+
+    def _sanitise_error_output(self, stderr: str) -> str:
+        redacted = stderr.strip()
+        redaction_patterns = (
+            r"(?i)(motherduck_token=)[^&\s]+",
+            r"(?i)(access_token=)[^&\s]+",
+            r"(?i)(token=)[^&\s]+",
+            r"(?i)(authorization:\s*bearer\s+)[^\s]+",
+            r"(?i)(AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN=)[^\s]+",
+            r"(?i)(MOTHERDUCK_TOKEN=)[^\s]+",
+        )
+        for pattern in redaction_patterns:
+            redacted = re.sub(pattern, r"\1[REDACTED]", redacted)
+
+        max_length = 2000
+        if len(redacted) > max_length:
+            return f"{redacted[:max_length]}... [truncated]"
+        return redacted

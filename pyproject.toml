@@ -1,22 +1,45 @@
 [project]
 name = "axiomatic-engine"
 version = "0.1.0"
-description = "Add your description here"
+description = "A typed orchestration engine for configurable ingestion and transformation pipelines."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "amisont", email = "134074972+amisont@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
+keywords = ["data-engineering", "elt", "ingestion", "pipelines", "dlt", "dbt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "dbt-duckdb>=1.10.1",
     "dlt[motherduck]>=1.25.0",
     "duckdb>=1.5.2",
     "fastmcp>=3.2.4",
     "psutil>=7.2.2",
-    "pytest>=9.0.3",
     "requests>=2.33.1",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.3.0",
+    "pre-commit>=4.6.0",
+    "twine>=6.2.0",
+]
+test = [
+    "pytest>=9.0.3",
 ]
 
 [build-system]
 requires = ["uv_build>=0.11.7,<0.12.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "axiomatic_engine"
+module-root = "src"

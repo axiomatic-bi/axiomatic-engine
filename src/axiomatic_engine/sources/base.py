@@ -7,8 +7,8 @@ from axiomatic_engine.contracts.source import ResourceLoadHints, ResourceProtoco
 class BaseResource:
     """
     Wraps a ResourceProtocol implementation to inject standardise metadata.
-    
-    This ensures every record produced by the engine has a consistent 
+
+    This ensures every record produced by the engine has a consistent
     audit trail, regardless of the underlying source technology.
     """
     def __init__(self, resource_logic: ResourceProtocol):
@@ -21,7 +21,7 @@ class BaseResource:
         Uses a generator to maintain memory efficiency for large datasets.
         """
         extraction_time = datetime.now(timezone.utc).isoformat()
-        
+
         for record in self._logic.read():
             record["_axiomatic_extracted_at_utc"] = extraction_time
             yield record
@@ -29,8 +29,8 @@ class BaseResource:
 class BaseSource:
     """
     A blueprint that converts any SourceProtocol into a dlt-compatible source.
-    
-    This acts as the bridge between the Axiomatic contracts and the 
+
+    This acts as the bridge between the Axiomatic contracts and the
     dlt framework, allowing for automated schema evolution and loading.
     """
     def __init__(self, source_logic: SourceProtocol):
