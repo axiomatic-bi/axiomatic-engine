@@ -126,6 +126,7 @@ This preserves engine-agnostic extension points while keeping current runtime na
 - `Transformer.run()` builds a `TransformationRequest`
 - executes through `TransformationProtocol` adapter
 - normalises stage failure semantics for pipeline orchestration
+- dbt adapter execution applies an environment allowlist and redacts token-like values from failure output
 
 ## Data flow in the current version
 

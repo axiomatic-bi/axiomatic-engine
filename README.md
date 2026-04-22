@@ -2,6 +2,19 @@
 
 Axiomatic Engine orchestrates ingestion and transformation pipelines while keeping domain logic in project folders.
 
+## Runtime Configuration Contract
+
+The engine reads typed runtime settings from `AXIOMATIC_*` environment variables, with project entrypoints able to override values via CLI flags.
+
+Schema layers are configured independently:
+
+- `AXIOMATIC_SCHEMA_BRONZE`
+- `AXIOMATIC_SCHEMA_SILVER`
+- `AXIOMATIC_SCHEMA_GOLD`
+- `AXIOMATIC_SCHEMA_ANALYTICS`
+
+This keeps medallion naming explicit and consistent across ingestion and dbt model targets.
+
 ## Ingestion Resource Load Hints
 
 Sources can provide optional per-resource hints through `ResourceLoadHints`:
@@ -31,3 +44,16 @@ Replay behaviour depends on per-resource load hints:
 - `append` preserves full arrival history
 
 Choose by resource based on analytical needs and source stability.
+
+Operationally, ingestion stage gating also considers:
+
+- `force_reload=True` always triggers ingestion
+- otherwise storage-cache heuristics decide whether ingestion should run
+
+## Security Defaults
+
+Current security defaults prioritise secret-safe runtime surfaces:
+
+- dbt command environments are filtered to an allowlist instead of forwarding the full process environment
+- token-like values in dbt stderr are redacted before being returned in transformation failure details
+- ingestion logs avoid dumping raw loader result objects
