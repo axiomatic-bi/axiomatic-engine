@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Literal, Protocol, runtime_checkable
 
-SourceKind = Literal["api", "filesystem", "scraper", "sharepoint"]
+SourceKind = Literal["rest_api", "http_file"]
 WriteDisposition = Literal["append", "replace", "merge"]
 SchemaEvolutionMode = Literal["auto", "strict", "discard"]
 

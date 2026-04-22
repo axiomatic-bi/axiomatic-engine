@@ -27,6 +27,7 @@ src/axiomatic_engine/
 │   └── engine.py      # Composite settings and env loading
 ├── sources/
 │   ├── base.py             # Base wrappers bridging contracts to dlt
+│   ├── factory.py          # Typed source definitions and source routing
 │   ├── file/
 │   │   └── http_stream.py # HTTP file source (CSV/TSV, optional gzip)
 │   └── rest/              # Generic REST source package
@@ -58,7 +59,7 @@ The contracts define a stable boundary for extension:
 
 `Literal` types constrain available kinds:
 
-- `SourceKind`: `"api" | "filesystem" | "scraper" | "sharepoint"`
+- `SourceKind`: `"rest_api" | "http_file"`
 - `RawStorageKind`: `"local" | "gcs" | "s3"`
 - `TransformationKind`: `"dbt"`
 - `WarehouseKind`: `"duckdb" | "motherduck" | "bigquery"`
@@ -72,15 +73,26 @@ The contracts define a stable boundary for extension:
 
 This keeps source-specific logic separate from orchestration concerns.
 
-### 3) Implemented source: filesystem
+### 3) Implemented sources
 
-`sources/file/http_stream.py` implements:
+`sources/file/http_stream.py` implements `HttpStreamSource` (`kind="http_file"`):
 
 - `HttpStreamResource`: streams rows from URL-backed CSV/TSV files
 - delimiter inference (`.tsv` -> tab, otherwise comma)
-- compression inference (`.gz` -> gzip)
+- compression inference (`.gz` -> gzip, query string ignored)
 - progress logging every N rows
-- `HttpStreamSource`: exposes a resource map as `ResourceProtocol` instances
+- per-resource timeout and load-hint support through typed definitions
+
+`sources/rest/base.py` implements `RestApiSource` (`kind="rest_api"`):
+
+- resource definitions with auth hook, pagination strategy, and normaliser contracts
+- typed request context construction and payload extraction rules
+
+`sources/factory.py` provides typed source definition routing:
+
+- `RestApiSourceDefinition` -> `RestApiSource`
+- `HttpFileSourceDefinition` -> `HttpStreamSource`
+- keeps direct source constructors available as an escape hatch
 
 ### 4) Settings layer
 

@@ -26,6 +26,17 @@ Schema layers are configured independently:
 
 This keeps medallion naming explicit and consistent across ingestion and dbt model targets.
 
+## Source Routing Contract
+
+Source implementations now expose specific source kinds:
+
+- `rest_api`
+- `http_file`
+
+The standard project path is typed source definitions routed through `axiomatic_engine.sources.factory` via `build_source(...)`.
+
+Direct source constructors remain supported for advanced project-specific customisation.
+
 ## Ingestion Resource Load Hints
 
 Sources can provide optional per-resource hints through `ResourceLoadHints`:

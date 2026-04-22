@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.core.pipeline import Pipeline
-from axiomatic_engine.sources.rest.base import RestApiResourceDefinition, RestApiSource
+from axiomatic_engine.sources.base import BaseSource
+from axiomatic_engine.sources.factory import RestApiSourceDefinition, build_source
+from axiomatic_engine.sources.rest.base import RestApiResourceDefinition
 
 DEFAULT_FAKE_STORE_BASE_URL = "https://fakestoreapi.com"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -74,7 +76,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _build_fake_store_source(base_url: str) -> RestApiSource:
+def _build_fake_store_source(base_url: str) -> BaseSource:
     resources = [
         RestApiResourceDefinition(
             name="products",
@@ -103,11 +105,13 @@ def _build_fake_store_source(base_url: str) -> RestApiSource:
             ),
         ),
     ]
-    return RestApiSource(
+    definition = RestApiSourceDefinition(
+        kind="rest_api",
         name="fake_store_bronze_ingest",
         base_url=base_url,
         resources=resources,
     )
+    return build_source(definition=definition)
 
 
 def main() -> None:
