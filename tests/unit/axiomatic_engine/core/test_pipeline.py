@@ -65,7 +65,7 @@ class PipelineConstructionTests(unittest.TestCase):
                         )
                         pipeline = Pipeline(settings=settings)
                         pipeline.ingestor = Mock()
-                        pipeline.land_raw_data = Mock(return_value=False)
+                        pipeline.should_run_ingestion = Mock(return_value=True)
 
                         source = Mock()
                         source.name = "fake_store"
@@ -101,7 +101,7 @@ class PipelineConstructionTests(unittest.TestCase):
                         )
                         pipeline = Pipeline(settings=settings)
                         pipeline.ingestor = Mock()
-                        pipeline.land_raw_data = Mock(return_value=False)
+                        pipeline.should_run_ingestion = Mock(return_value=False)
 
                         source = Mock()
                         source.name = "fake_store"
@@ -146,13 +146,44 @@ class PipelineConstructionTests(unittest.TestCase):
                         )
                         pipeline = Pipeline(settings=settings)
                         pipeline.ingestor = Mock()
-                        pipeline.land_raw_data = Mock(return_value=False)
+                        pipeline.should_run_ingestion = Mock(return_value=True)
 
                         source = Mock()
                         source.name = "fake_store"
 
                         with self.assertRaises(RuntimeError):
                             pipeline.run(source=source, force_reload=True)
+
+    def test_force_reload_forces_ingestion_when_cache_has_no_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("axiomatic_engine.core.pipeline.get_storage_adapter") as mock_storage_factory:
+                with patch("axiomatic_engine.core.pipeline.get_warehouse_adapter") as mock_warehouse_factory:
+                    mock_storage = Mock()
+                    mock_storage.list_files.return_value = []
+                    mock_storage_factory.return_value = mock_storage
+                    mock_warehouse_factory.return_value = Mock()
+
+                    settings = EngineSettings.from_env(
+                        {
+                            "AXIOMATIC_STORAGE_KIND": "local",
+                            "AXIOMATIC_STORAGE_PATH": temp_dir,
+                            "AXIOMATIC_WAREHOUSE_KIND": "duckdb",
+                            "AXIOMATIC_WAREHOUSE_PATH": str(
+                                Path(temp_dir) / "analytics.duckdb"
+                            ),
+                            "AXIOMATIC_TRANSFORM_ENABLED": "false",
+                        }
+                    )
+                    pipeline = Pipeline(settings=settings)
+                    pipeline.ingestor = Mock()
+
+                    source = Mock()
+                    source.name = "fake_store"
+                    source.get_resources.return_value = []
+
+                    pipeline.run(source=source, force_reload=True)
+
+                    pipeline.ingestor.run.assert_called_once()
 
 
 if __name__ == "__main__":

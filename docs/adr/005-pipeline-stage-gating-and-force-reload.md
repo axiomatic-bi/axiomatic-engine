@@ -14,8 +14,10 @@ A lightweight gating strategy was needed to avoid unnecessary loads while keepin
 
 Use stage gating in `Pipeline.run(...)`:
 
-- land resources and detect whether new data was landed
-- run ingestion when data was landed or when `force_reload=True`
+- evaluate ingestion necessity through `should_run_ingestion(...)`:
+  - run ingestion immediately when `force_reload=True`
+  - otherwise use storage-cache heuristics to detect missing resources
+- run ingestion when gating returns true
 - run transformations according to transform settings after ingestion stage decision
 
 `force_reload` remains the explicit operator control for full reruns.
@@ -30,5 +32,5 @@ Use stage gating in `Pipeline.run(...)`:
 
 ### Trade-offs
 
-- landing heuristics may not capture all upstream-change scenarios
-- incorrect assumptions in storage state can cause skipped loads unless force reload is used
+- storage-cache heuristics may not capture all upstream-change scenarios
+- incorrect assumptions in cache state can cause skipped loads unless force reload is used

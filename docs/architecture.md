@@ -20,8 +20,10 @@ src/axiomatic_engine/
 │   ├── transformation.py # Transformation contracts
 │   └── warehouse.py   # Warehouse contracts
 ├── config/
-│   ├── storage.py     # Typed storage settings
-│   ├── warehouse.py   # Typed warehouse settings
+│   ├── storage/       # Typed storage settings by backend + builder
+│   ├── warehouse/     # Typed warehouse settings by backend + builder
+│   ├── schema.py      # Medallion schema settings
+│   ├── transform.py   # Transformation settings and validation
 │   └── engine.py      # Composite settings and env loading
 ├── sources/
 │   ├── base.py             # Base wrappers bridging contracts to dlt
@@ -85,7 +87,8 @@ This keeps source-specific logic separate from orchestration concerns.
 `config/engine.py` provides `EngineSettings` as the typed runtime contract.
 
 - `EngineSettings.from_env()` reads `AXIOMATIC_*` variables
-- storage, warehouse, and transformation settings are modelled as dedicated dataclasses
+- storage and warehouse settings are built from backend-specific typed settings packages
+- schema and transformation settings are modelled as dedicated dataclasses
 - `with_overrides(...)` enables CLI-over-env precedence in entrypoint scripts
 
 ### 5) Adapters and factory isolation
@@ -114,8 +117,8 @@ This preserves engine-agnostic extension points while keeping current runtime na
 `core/pipeline.py`:
 
 - `Pipeline` accepts `EngineSettings` and resolves storage/warehouse adapters via the factory
-- `land_raw_data()` currently checks for already-landed resources by filename and returns a boolean
-- `run()` triggers ingestion when data was landed or when `force_reload=True`
+- `should_run_ingestion(...)` decides ingestion execution using force-reload override and storage-cache heuristics
+- `run()` triggers ingestion when gating returns true and always honours `force_reload=True`
 - when transformation is enabled, `Pipeline` delegates to `Transformer`
 
 `core/transformation.py`:
@@ -151,7 +154,7 @@ Declared extension points (not yet implemented):
 - storage adapters for `gcs`, `s3`
 - additional transformation backends beyond dbt
 - warehouse adapter for `bigquery`
-- full landing/write workflow in `Pipeline.land_raw_data()` (currently detection-oriented)
+- full landing/write workflow before ingestion (current gating is cache-detection-oriented)
 
 ## Design constraints
 
