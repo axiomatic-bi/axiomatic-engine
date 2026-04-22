@@ -5,26 +5,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import cast
 
-from axiomatic_engine.config.storage import StorageSettings
-from axiomatic_engine.config.warehouse import WarehouseSettings
+from axiomatic_engine.config.schema import SchemaSettings
+from axiomatic_engine.config.storage import StorageSettings, build_storage_settings
+from axiomatic_engine.config.transform import TransformSettings, validate_transform_settings
+from axiomatic_engine.config.warehouse import WarehouseSettings, build_warehouse_settings
 from axiomatic_engine.contracts.storage import RawStorageKind
 from axiomatic_engine.contracts.transformation import TransformationKind
 from axiomatic_engine.contracts.warehouse import WarehouseKind
-
-
-@dataclass(frozen=True)
-class TransformSettings:
-    """
-    Typed configuration for the transformation stage.
-    """
-
-    enabled: bool = False
-    kind: TransformationKind = "dbt"
-    dbt_project_dir: str | None = None
-    dbt_profiles_dir: str | None = None
-    dbt_profile_name: str | None = None
-    dbt_target: str | None = None
-    dbt_run_tests: bool = True
 
 
 @dataclass(frozen=True)
@@ -35,6 +22,7 @@ class EngineSettings:
 
     storage: StorageSettings
     warehouse: WarehouseSettings
+    schema: SchemaSettings = field(default_factory=SchemaSettings)
     transform: TransformSettings = field(default_factory=TransformSettings)
 
     @classmethod
@@ -52,7 +40,10 @@ class EngineSettings:
 
         warehouse_kind = _parse_warehouse_kind(source.get("AXIOMATIC_WAREHOUSE_KIND", "duckdb"))
         warehouse_path = source.get("AXIOMATIC_WAREHOUSE_PATH", "./data/warehouse.duckdb")
-        warehouse_schema = source.get("AXIOMATIC_WAREHOUSE_SCHEMA", "bronze")
+        bronze_schema = source.get("AXIOMATIC_SCHEMA_BRONZE", "bronze")
+        silver_schema = source.get("AXIOMATIC_SCHEMA_SILVER", "silver")
+        gold_schema = source.get("AXIOMATIC_SCHEMA_GOLD", "gold")
+        analytics_schema = source.get("AXIOMATIC_SCHEMA_ANALYTICS", "analytics")
         motherduck_access_token = source.get("AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN")
         transform_enabled = _parse_bool(source.get("AXIOMATIC_TRANSFORM_ENABLED", "false"))
         transform_kind = _parse_transform_kind(source.get("AXIOMATIC_TRANSFORM_BACKEND", "dbt"))
@@ -71,18 +62,23 @@ class EngineSettings:
             dbt_target=dbt_target,
             dbt_run_tests=dbt_run_tests,
         )
-        _validate_transform_settings(transform_settings=transform_settings)
+        validate_transform_settings(transform_settings=transform_settings)
 
         return cls(
-            storage=StorageSettings(
+            storage=build_storage_settings(
                 kind=storage_kind,
                 path=storage_path,
             ),
-            warehouse=WarehouseSettings(
+            warehouse=build_warehouse_settings(
                 kind=warehouse_kind,
                 path=warehouse_path,
-                schema_name=warehouse_schema,
                 motherduck_access_token=motherduck_access_token,
+            ),
+            schema=SchemaSettings(
+                bronze=bronze_schema,
+                silver=silver_schema,
+                gold=gold_schema,
+                analytics=analytics_schema,
             ),
             transform=transform_settings,
         )
@@ -93,7 +89,10 @@ class EngineSettings:
         storage_path: str | None = None,
         warehouse_kind: WarehouseKind | None = None,
         warehouse_path: str | None = None,
-        warehouse_schema_name: str | None = None,
+        bronze_schema_name: str | None = None,
+        silver_schema_name: str | None = None,
+        gold_schema_name: str | None = None,
+        analytics_schema_name: str | None = None,
         transform_enabled: bool | None = None,
         transform_kind: TransformationKind | None = None,
         dbt_project_dir: str | None = None,
@@ -125,20 +124,32 @@ class EngineSettings:
             if dbt_run_tests is not None
             else self.transform.dbt_run_tests,
         )
-        _validate_transform_settings(transform_settings=transform_settings)
+        validate_transform_settings(transform_settings=transform_settings)
 
         return EngineSettings(
-            storage=StorageSettings(
+            storage=build_storage_settings(
                 kind=storage_kind if storage_kind is not None else self.storage.kind,
                 path=storage_path if storage_path is not None else self.storage.path,
+                existing=self.storage,
             ),
-            warehouse=WarehouseSettings(
+            warehouse=build_warehouse_settings(
                 kind=warehouse_kind if warehouse_kind is not None else self.warehouse.kind,
                 path=warehouse_path if warehouse_path is not None else self.warehouse.path,
-                schema_name=warehouse_schema_name
-                if warehouse_schema_name is not None
-                else self.warehouse.schema_name,
-                motherduck_access_token=self.warehouse.motherduck_access_token,
+                existing=self.warehouse,
+            ),
+            schema=SchemaSettings(
+                bronze=bronze_schema_name
+                if bronze_schema_name is not None
+                else self.schema.bronze,
+                silver=silver_schema_name
+                if silver_schema_name is not None
+                else self.schema.silver,
+                gold=gold_schema_name
+                if gold_schema_name is not None
+                else self.schema.gold,
+                analytics=analytics_schema_name
+                if analytics_schema_name is not None
+                else self.schema.analytics,
             ),
             transform=transform_settings,
         )
@@ -181,13 +192,3 @@ def _parse_bool(value: str) -> bool:
         f"Unsupported boolean value: {value}. "
         "Expected one of: 1, true, yes, on, 0, false, no, off."
     )
-
-
-def _validate_transform_settings(transform_settings: TransformSettings) -> None:
-    if not transform_settings.enabled:
-        return
-    if transform_settings.kind == "dbt" and not transform_settings.dbt_project_dir:
-        raise ValueError(
-            "AXIOMATIC_DBT_PROJECT_DIR is required when transformations are enabled "
-            "with AXIOMATIC_TRANSFORM_BACKEND=dbt."
-        )

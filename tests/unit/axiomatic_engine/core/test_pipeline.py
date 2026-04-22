@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from axiomatic_engine.config.engine import EngineSettings
-from axiomatic_engine.config.storage import StorageSettings
-from axiomatic_engine.config.warehouse import WarehouseSettings
+from axiomatic_engine.config.storage import LocalStorageSettings
+from axiomatic_engine.config.warehouse import DuckDBWarehouseSettings
 from axiomatic_engine.core.pipeline import Pipeline
 
 
@@ -15,9 +15,8 @@ class PipelineConstructionTests(unittest.TestCase):
     def test_pipeline_initialises_with_engine_settings(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             settings = EngineSettings(
-                storage=StorageSettings(kind="local", path=temp_dir),
-                warehouse=WarehouseSettings(
-                    kind="duckdb",
+                storage=LocalStorageSettings(path=temp_dir),
+                warehouse=DuckDBWarehouseSettings(
                     path=str(Path(temp_dir) / "analytics.duckdb"),
                 ),
             )
@@ -54,6 +53,7 @@ class PipelineConstructionTests(unittest.TestCase):
                                 "AXIOMATIC_STORAGE_PATH": temp_dir,
                                 "AXIOMATIC_WAREHOUSE_KIND": "motherduck",
                                 "AXIOMATIC_WAREHOUSE_PATH": "md:analytics",
+                                "AXIOMATIC_SCHEMA_BRONZE": "raw_zone",
                                 "AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN": "secret-token",
                                 "AXIOMATIC_TRANSFORM_ENABLED": "true",
                                 "AXIOMATIC_TRANSFORM_BACKEND": "dbt",
@@ -72,6 +72,10 @@ class PipelineConstructionTests(unittest.TestCase):
 
                         pipeline.run(source=source, force_reload=True)
 
+                        pipeline.ingestor.run.assert_called_once_with(
+                            source=source,
+                            dataset_name="raw_zone",
+                        )
                         mock_transform.run.assert_called_once()
 
     def test_pipeline_skips_transformations_when_disabled(self) -> None:

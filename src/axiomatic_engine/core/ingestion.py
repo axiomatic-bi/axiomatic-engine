@@ -17,7 +17,7 @@ class Ingestor:
     def __init__(self, warehouse: WarehouseProtocol):
         self.warehouse = warehouse
 
-    def run(self, source: BaseSource, dataset_name: str = "bronze"):
+    def run(self, source: BaseSource, dataset_name: str):
         """
         Executes the ingestion pipeline.
         

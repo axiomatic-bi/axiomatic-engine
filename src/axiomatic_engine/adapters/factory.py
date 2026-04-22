@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from axiomatic_engine.config.engine import TransformSettings
+from axiomatic_engine.config.transform import TransformSettings
 from axiomatic_engine.config.storage import StorageSettings
-from axiomatic_engine.config.warehouse import WarehouseSettings
+from axiomatic_engine.config.warehouse import MotherDuckWarehouseSettings, WarehouseSettings
 from axiomatic_engine.contracts.transformation import TransformationProtocol
 from axiomatic_engine.contracts.storage import RawStorageProtocol
 from axiomatic_engine.contracts.warehouse import WarehouseProtocol
@@ -32,9 +32,14 @@ def get_warehouse_adapter(settings: WarehouseSettings) -> WarehouseProtocol:
     if settings.kind == "duckdb":
         return DuckDBWarehouse(path=settings.path)
     if settings.kind == "motherduck":
+        access_token = (
+            settings.access_token
+            if isinstance(settings, MotherDuckWarehouseSettings)
+            else None
+        )
         return MotherDuckWarehouse(
             path=settings.path,
-            access_token=settings.motherduck_access_token,
+            access_token=access_token,
         )
     if settings.kind == "bigquery":
         raise NotImplementedError("BigQuery is not implemented yet")

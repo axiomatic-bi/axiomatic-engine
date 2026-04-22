@@ -23,7 +23,10 @@ def _parse_args() -> argparse.Namespace:
         default=None,
     )
     parser.add_argument("--warehouse-path", default=None)
-    parser.add_argument("--warehouse-schema", default=None)
+    parser.add_argument("--schema-bronze", default=None)
+    parser.add_argument("--schema-silver", default=None)
+    parser.add_argument("--schema-gold", default=None)
+    parser.add_argument("--schema-analytics", default=None)
     parser.add_argument("--force-reload", action="store_true")
     return parser.parse_args()
 
@@ -49,7 +52,10 @@ def main():
         storage_path=args.storage_path,
         warehouse_kind=args.warehouse_kind,
         warehouse_path=args.warehouse_path,
-        warehouse_schema_name=args.warehouse_schema,
+        bronze_schema_name=args.schema_bronze,
+        silver_schema_name=args.schema_silver,
+        gold_schema_name=args.schema_gold,
+        analytics_schema_name=args.schema_analytics,
     )
     engine = Pipeline(settings=settings)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from axiomatic_engine.config.engine import EngineSettings
+from axiomatic_engine.config.warehouse import MotherDuckWarehouseSettings
 
 
 class EngineSettingsTests(unittest.TestCase):
@@ -13,7 +14,10 @@ class EngineSettingsTests(unittest.TestCase):
                 "AXIOMATIC_STORAGE_PATH": "./data/raw_vault",
                 "AXIOMATIC_WAREHOUSE_KIND": "motherduck",
                 "AXIOMATIC_WAREHOUSE_PATH": "md:analytics",
-                "AXIOMATIC_WAREHOUSE_SCHEMA": "bronze",
+                "AXIOMATIC_SCHEMA_BRONZE": "raw_zone",
+                "AXIOMATIC_SCHEMA_SILVER": "refined_zone",
+                "AXIOMATIC_SCHEMA_GOLD": "curated_zone",
+                "AXIOMATIC_SCHEMA_ANALYTICS": "analytics_zone",
                 "AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN": "secret-token",
                 "AXIOMATIC_TRANSFORM_ENABLED": "true",
                 "AXIOMATIC_TRANSFORM_BACKEND": "dbt",
@@ -29,8 +33,12 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.storage.path, "./data/raw_vault")
         self.assertEqual(settings.warehouse.kind, "motherduck")
         self.assertEqual(settings.warehouse.path, "md:analytics")
-        self.assertEqual(settings.warehouse.schema_name, "bronze")
-        self.assertEqual(settings.warehouse.motherduck_access_token, "secret-token")
+        self.assertEqual(settings.schema.bronze, "raw_zone")
+        self.assertEqual(settings.schema.silver, "refined_zone")
+        self.assertEqual(settings.schema.gold, "curated_zone")
+        self.assertEqual(settings.schema.analytics, "analytics_zone")
+        self.assertIsInstance(settings.warehouse, MotherDuckWarehouseSettings)
+        self.assertEqual(settings.warehouse.access_token, "secret-token")
         self.assertTrue(settings.transform.enabled)
         self.assertEqual(settings.transform.kind, "dbt")
         self.assertEqual(settings.transform.dbt_project_dir, "./projects/fake-store/dbt")
@@ -46,8 +54,11 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.storage.path, "./data/raw_vault")
         self.assertEqual(settings.warehouse.kind, "duckdb")
         self.assertEqual(settings.warehouse.path, "./data/warehouse.duckdb")
-        self.assertEqual(settings.warehouse.schema_name, "bronze")
-        self.assertIsNone(settings.warehouse.motherduck_access_token)
+        self.assertEqual(settings.schema.bronze, "bronze")
+        self.assertEqual(settings.schema.silver, "silver")
+        self.assertEqual(settings.schema.gold, "gold")
+        self.assertEqual(settings.schema.analytics, "analytics")
+        self.assertNotIsInstance(settings.warehouse, MotherDuckWarehouseSettings)
         self.assertFalse(settings.transform.enabled)
         self.assertEqual(settings.transform.kind, "dbt")
         self.assertIsNone(settings.transform.dbt_project_dir)
@@ -79,13 +90,16 @@ class EngineSettingsTests(unittest.TestCase):
                 "AXIOMATIC_STORAGE_PATH": "./data/raw_vault",
                 "AXIOMATIC_WAREHOUSE_KIND": "duckdb",
                 "AXIOMATIC_WAREHOUSE_PATH": "./data/local.duckdb",
-                "AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN": "secret-token",
             }
         )
 
         overridden = base.with_overrides(
             warehouse_kind="motherduck",
             warehouse_path="md:analytics",
+            bronze_schema_name="raw_zone",
+            silver_schema_name="refined_zone",
+            gold_schema_name="curated_zone",
+            analytics_schema_name="analytics_zone",
             transform_enabled=True,
             transform_kind="dbt",
             dbt_project_dir="./projects/fake-store/dbt",
@@ -99,10 +113,12 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(overridden.storage.path, "./data/raw_vault")
         self.assertEqual(overridden.warehouse.kind, "motherduck")
         self.assertEqual(overridden.warehouse.path, "md:analytics")
-        self.assertEqual(
-            overridden.warehouse.motherduck_access_token,
-            "secret-token",
-        )
+        self.assertIsInstance(overridden.warehouse, MotherDuckWarehouseSettings)
+        self.assertIsNone(overridden.warehouse.access_token)
+        self.assertEqual(overridden.schema.bronze, "raw_zone")
+        self.assertEqual(overridden.schema.silver, "refined_zone")
+        self.assertEqual(overridden.schema.gold, "curated_zone")
+        self.assertEqual(overridden.schema.analytics, "analytics_zone")
         self.assertTrue(overridden.transform.enabled)
         self.assertEqual(overridden.transform.kind, "dbt")
         self.assertEqual(overridden.transform.dbt_project_dir, "./projects/fake-store/dbt")

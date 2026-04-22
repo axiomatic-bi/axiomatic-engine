@@ -30,6 +30,7 @@ class Pipeline:
         self.storage = get_storage_adapter(settings=settings.storage)
         self.warehouse = get_warehouse_adapter(settings=settings.warehouse)
         self.warehouse_kind: WarehouseKind = settings.warehouse.kind
+        self.schema_settings = settings.schema
         self.ingestor = Ingestor(warehouse=self.warehouse)
         self.transform_settings = settings.transform
         self.transformer: Transformer | None = None
@@ -73,7 +74,10 @@ class Pipeline:
 
         if data_was_landed or force_reload:
             LOGGER.info("Ingesting data into the warehouse")
-            load_info = self.ingestor.run(source=source)
+            load_info = self.ingestor.run(
+                source=source,
+                dataset_name=self.schema_settings.bronze,
+            )
             LOGGER.info("Ingestion completed: %s", load_info)
         else:
             LOGGER.info("Warehouse is already up to date. Skipping load.")

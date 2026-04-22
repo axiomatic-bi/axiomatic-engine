@@ -30,7 +30,10 @@ def _parse_args() -> argparse.Namespace:
         default=None,
     )
     parser.add_argument("--warehouse-path", default=None)
-    parser.add_argument("--warehouse-schema", default=None)
+    parser.add_argument("--schema-bronze", default=None)
+    parser.add_argument("--schema-silver", default=None)
+    parser.add_argument("--schema-gold", default=None)
+    parser.add_argument("--schema-analytics", default=None)
     parser.add_argument(
         "--transform-backend",
         choices=["dbt"],
@@ -118,7 +121,10 @@ def main() -> None:
         storage_path=args.storage_path,
         warehouse_kind=args.warehouse_kind,
         warehouse_path=args.warehouse_path,
-        warehouse_schema_name=args.warehouse_schema,
+        bronze_schema_name=args.schema_bronze,
+        silver_schema_name=args.schema_silver,
+        gold_schema_name=args.schema_gold,
+        analytics_schema_name=args.schema_analytics,
         transform_enabled=args.transform_enabled,
         transform_kind=args.transform_backend,
         dbt_project_dir=args.dbt_project_dir,
