@@ -1,13 +1,21 @@
 [project]
 name = "axiomatic-engine"
 version = "0.1.0"
-description = "Add your description here"
+description = "A typed orchestration engine for configurable ingestion and transformation pipelines."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
     { name = "amisont", email = "134074972+amisont@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
+keywords = ["data-engineering", "elt", "ingestion", "pipelines", "dlt", "dbt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "dbt-duckdb>=1.10.1",
     "dlt[motherduck]>=1.25.0",

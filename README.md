@@ -2,6 +2,24 @@
 
 Axiomatic Engine orchestrates ingestion and transformation pipelines while keeping domain logic in project folders.
 
+## Quick Start
+
+Install the package:
+
+- `uv add axiomatic-engine`
+
+Or with pip:
+
+- `pip install axiomatic-engine`
+
+Run a project entrypoint:
+
+- copy `projects/fake_store/.env.example` to `projects/fake_store/.env`
+- set required environment variables for your target warehouse and storage
+- run `uv run python projects/fake_store/run_pipeline.py`
+
+This gives a working reference for a REST ingestion source and transformation flow using the engine contracts.
+
 ## Contributor Quickstart
 
 The project standardises on `uv` for local quality checks and packaging workflows.
