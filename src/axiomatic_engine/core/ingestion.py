@@ -42,9 +42,8 @@ class Ingestor:
         )
         duration_s = perf_counter() - load_start
         LOGGER.info(
-            "Ingestion complete for %s in %.1fs. Status: %s",
+            "Ingestion complete for %s in %.1fs.",
             source.name,
             duration_s,
-            load_info,
         )
         return load_info

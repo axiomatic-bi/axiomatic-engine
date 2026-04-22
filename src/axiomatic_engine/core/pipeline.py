@@ -74,11 +74,11 @@ class Pipeline:
 
         if data_was_landed or force_reload:
             LOGGER.info("Ingesting data into the warehouse")
-            load_info = self.ingestor.run(
+            self.ingestor.run(
                 source=source,
                 dataset_name=self.schema_settings.bronze,
             )
-            LOGGER.info("Ingestion completed: %s", load_info)
+            LOGGER.info("Ingestion completed successfully.")
         else:
             LOGGER.info("Warehouse is already up to date. Skipping load.")
 
