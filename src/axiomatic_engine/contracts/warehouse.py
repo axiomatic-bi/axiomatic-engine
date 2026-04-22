@@ -39,8 +39,8 @@ class WarehouseProtocol(Protocol):
         ...
 
     def load_from_references(
-        self, 
-        references: list[RawFileRef], 
+        self,
+        references: list[RawFileRef],
         target_schema: str = "bronze"
     ) -> dict[str, int]:
         """

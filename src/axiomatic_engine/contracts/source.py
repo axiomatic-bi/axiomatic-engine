@@ -26,7 +26,7 @@ class ResourceProtocol(Protocol):
     Represents a single stream of data (a table) from a source.
     """
     name: str  # e.g., "title_basics"
-    
+
     def read(self) -> Iterable[dict[str, Any]]:
         """
         Yields raw records from the source.

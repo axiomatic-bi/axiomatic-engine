@@ -21,7 +21,7 @@ class LocalStorage(RawStorageProtocol):
         if not search_path.exists():
             return []
 
-        # We return RawFileRef objects to keep the engine logic decoupled 
+        # We return RawFileRef objects to keep the engine logic decoupled
         # from OS-specific path strings.
         return [
             RawFileRef(

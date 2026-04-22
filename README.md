@@ -102,6 +102,7 @@ Current security defaults prioritise secret-safe runtime surfaces:
 
 The package quality gate is standardised on `uv` and runs the same checks you should later enforce in CI:
 
+- pre-commit checks across the repository
 - unit tests
 - distribution build (wheel + source distribution)
 - distribution metadata checks
@@ -128,9 +129,9 @@ Run hooks on all files:
 Release publishing is handled by `.github/workflows/release.yml`.
 
 - Trigger: push a tag matching `v*` (for example `v0.1.1`)
-- Required repository secret: `PYPI_API_TOKEN`
+- Required PyPI setup: configure a Trusted Publisher for this GitHub repository
 - Workflow behaviour:
   - runs the same quality gate command used locally and in CI
   - builds release distributions
   - uploads `dist/*` as workflow artefacts
-  - publishes with `uv publish`
+  - publishes with `pypa/gh-action-pypi-publish` via OIDC

@@ -20,10 +20,10 @@ LOGGER = logging.getLogger(__name__)
 class Pipeline:
     """
     The central orchestrator of the Axiomatic Engine.
-    
+
     It manages the ingestion and optional transformation stages.
     """
-    
+
     def __init__(self, settings: EngineSettings) -> None:
         self.storage = get_storage_adapter(settings=settings.storage)
         self.warehouse = get_warehouse_adapter(settings=settings.warehouse)

@@ -57,6 +57,10 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     dist_dir = repo_root / "dist"
 
+    _run_step(
+        "Run pre-commit checks",
+        [sys.executable, "-m", "pre_commit", "run", "--all-files"],
+    )
     _run_step("Run unit tests", [sys.executable, "-m", "pytest"])
     _run_step("Build package distributions", [sys.executable, "-m", "build"])
     _run_step("Validate distribution metadata", [sys.executable, "-m", "twine", "check", "dist/*"])

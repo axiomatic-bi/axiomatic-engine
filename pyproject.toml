@@ -3,7 +3,8 @@ name = "axiomatic-engine"
 version = "0.1.0"
 description = "A typed orchestration engine for configurable ingestion and transformation pipelines."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "amisont", email = "134074972+amisont@users.noreply.github.com" }
 ]

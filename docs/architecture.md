@@ -1,7 +1,7 @@
 # Axiomatic Engine Architecture
 
 ## Purpose
-`axiomatic_engine` is a protocol-driven data pipeline library that standardises how sources, storage backends, warehouse backends, and transformation backends interact.  
+`axiomatic_engine` is a protocol-driven data pipeline library that standardises how sources, storage backends, warehouse backends, and transformation backends interact.
 The current implementation focuses on:
 
 - contract-first interfaces via Python `Protocol`s
