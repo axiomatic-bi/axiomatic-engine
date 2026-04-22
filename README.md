@@ -2,6 +2,17 @@
 
 Axiomatic Engine orchestrates ingestion and transformation pipelines while keeping domain logic in project folders.
 
+## Contributor Quickstart
+
+The project standardises on `uv` for local quality checks and packaging workflows.
+
+- Install hooks once:
+  - `uv run --group dev pre-commit install`
+- Run hooks across the repository:
+  - `uv run --group dev pre-commit run --all-files`
+- Run the full package quality gate:
+  - `uv run --group dev --group test python scripts/quality_gate.py`
+
 ## Runtime Configuration Contract
 
 The engine reads typed runtime settings from `AXIOMATIC_*` environment variables, with project entrypoints able to override values via CLI flags.
@@ -57,3 +68,40 @@ Current security defaults prioritise secret-safe runtime surfaces:
 - dbt command environments are filtered to an allowlist instead of forwarding the full process environment
 - token-like values in dbt stderr are redacted before being returned in transformation failure details
 - ingestion logs avoid dumping raw loader result objects
+
+## Package Quality Gate
+
+The package quality gate is standardised on `uv` and runs the same checks you should later enforce in CI:
+
+- unit tests
+- distribution build (wheel + source distribution)
+- distribution metadata checks
+- wheel content validation for `src`-layout packaging boundaries
+
+Run it with both dependency groups enabled:
+
+`uv run --group dev --group test python scripts/quality_gate.py`
+
+## Pre-commit Checks
+
+Use pre-commit for fast local feedback before commits.
+
+Install the hooks:
+
+`uv run --group dev pre-commit install`
+
+Run hooks on all files:
+
+`uv run --group dev pre-commit run --all-files`
+
+## Release Publishing
+
+Release publishing is handled by `.github/workflows/release.yml`.
+
+- Trigger: push a tag matching `v*` (for example `v0.1.1`)
+- Required repository secret: `PYPI_API_TOKEN`
+- Workflow behaviour:
+  - runs the same quality gate command used locally and in CI
+  - builds release distributions
+  - uploads `dist/*` as workflow artefacts
+  - publishes with `uv publish`
