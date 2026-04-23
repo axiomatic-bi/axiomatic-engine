@@ -14,6 +14,7 @@ class EngineSettingsTests(unittest.TestCase):
                 "AXIOMATIC_STORAGE_PATH": "./data/raw_vault",
                 "AXIOMATIC_WAREHOUSE_KIND": "motherduck",
                 "AXIOMATIC_WAREHOUSE_PATH": "md:analytics",
+                "AXIOMATIC_DLT_PIPELINES_DIR": "./.dlt/pipelines",
                 "AXIOMATIC_SCHEMA_BRONZE": "raw_zone",
                 "AXIOMATIC_SCHEMA_SILVER": "refined_zone",
                 "AXIOMATIC_SCHEMA_GOLD": "curated_zone",
@@ -33,6 +34,7 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.storage.path, "./data/raw_vault")
         self.assertEqual(settings.warehouse.kind, "motherduck")
         self.assertEqual(settings.warehouse.path, "md:analytics")
+        self.assertEqual(settings.dlt_pipelines_dir, "./.dlt/pipelines")
         self.assertEqual(settings.schema.bronze, "raw_zone")
         self.assertEqual(settings.schema.silver, "refined_zone")
         self.assertEqual(settings.schema.gold, "curated_zone")
@@ -54,6 +56,7 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(settings.storage.path, "./data/raw_vault")
         self.assertEqual(settings.warehouse.kind, "duckdb")
         self.assertEqual(settings.warehouse.path, "./data/warehouse.duckdb")
+        self.assertIsNone(settings.dlt_pipelines_dir)
         self.assertEqual(settings.schema.bronze, "bronze")
         self.assertEqual(settings.schema.silver, "silver")
         self.assertEqual(settings.schema.gold, "gold")
@@ -96,6 +99,7 @@ class EngineSettingsTests(unittest.TestCase):
         overridden = base.with_overrides(
             warehouse_kind="motherduck",
             warehouse_path="md:analytics",
+            dlt_pipelines_dir="./.dlt/pipelines",
             bronze_schema_name="raw_zone",
             silver_schema_name="refined_zone",
             gold_schema_name="curated_zone",
@@ -113,6 +117,7 @@ class EngineSettingsTests(unittest.TestCase):
         self.assertEqual(overridden.storage.path, "./data/raw_vault")
         self.assertEqual(overridden.warehouse.kind, "motherduck")
         self.assertEqual(overridden.warehouse.path, "md:analytics")
+        self.assertEqual(overridden.dlt_pipelines_dir, "./.dlt/pipelines")
         self.assertIsInstance(overridden.warehouse, MotherDuckWarehouseSettings)
         self.assertIsNone(overridden.warehouse.access_token)
         self.assertEqual(overridden.schema.bronze, "raw_zone")

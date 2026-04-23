@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+
+import dlt
+
 from axiomatic_engine.adapters.warehouse.base_duck import DuckCompatibleWarehouseBase
 
 
@@ -28,6 +31,13 @@ class DuckDBWarehouse(DuckCompatibleWarehouseBase):
         For DuckDB, this is usually 'duckdb:///path/to/file.db'.
         """
         return f"duckdb:///{self.path}"
+
+    def get_dlt_destination(self) -> Any:
+        """
+        Route dlt loads through a configured DuckDB destination object.
+        """
+        credentials = self.get_dlt_credentials()
+        return dlt.destinations.duckdb(credentials=credentials)
 
     def get_dlt_credentials(self) -> Any:
         """

@@ -22,6 +22,7 @@ class EngineSettings:
 
     storage: StorageSettings
     warehouse: WarehouseSettings
+    dlt_pipelines_dir: str | None = None
     schema: SchemaSettings = field(default_factory=SchemaSettings)
     transform: TransformSettings = field(default_factory=TransformSettings)
 
@@ -40,6 +41,7 @@ class EngineSettings:
 
         warehouse_kind = _parse_warehouse_kind(source.get("AXIOMATIC_WAREHOUSE_KIND", "duckdb"))
         warehouse_path = source.get("AXIOMATIC_WAREHOUSE_PATH", "./data/warehouse.duckdb")
+        dlt_pipelines_dir = source.get("AXIOMATIC_DLT_PIPELINES_DIR")
         bronze_schema = source.get("AXIOMATIC_SCHEMA_BRONZE", "bronze")
         silver_schema = source.get("AXIOMATIC_SCHEMA_SILVER", "silver")
         gold_schema = source.get("AXIOMATIC_SCHEMA_GOLD", "gold")
@@ -74,6 +76,7 @@ class EngineSettings:
                 path=warehouse_path,
                 motherduck_access_token=motherduck_access_token,
             ),
+            dlt_pipelines_dir=dlt_pipelines_dir,
             schema=SchemaSettings(
                 bronze=bronze_schema,
                 silver=silver_schema,
@@ -89,6 +92,7 @@ class EngineSettings:
         storage_path: str | None = None,
         warehouse_kind: WarehouseKind | None = None,
         warehouse_path: str | None = None,
+        dlt_pipelines_dir: str | None = None,
         bronze_schema_name: str | None = None,
         silver_schema_name: str | None = None,
         gold_schema_name: str | None = None,
@@ -137,6 +141,9 @@ class EngineSettings:
                 path=warehouse_path if warehouse_path is not None else self.warehouse.path,
                 existing=self.warehouse,
             ),
+            dlt_pipelines_dir=dlt_pipelines_dir
+            if dlt_pipelines_dir is not None
+            else self.dlt_pipelines_dir,
             schema=SchemaSettings(
                 bronze=bronze_schema_name
                 if bronze_schema_name is not None

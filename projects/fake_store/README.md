@@ -55,6 +55,7 @@ Copy `.env.example` to a local `.env` file and set values for your environment.
 Key variables:
 
 - warehouse: `AXIOMATIC_WAREHOUSE_KIND`, `AXIOMATIC_WAREHOUSE_PATH`
+- dlt runtime: `AXIOMATIC_DLT_PIPELINES_DIR`
 - schemas: `AXIOMATIC_SCHEMA_BRONZE`, `AXIOMATIC_SCHEMA_SILVER`, `AXIOMATIC_SCHEMA_GOLD`, `AXIOMATIC_SCHEMA_ANALYTICS`
 - storage: `AXIOMATIC_STORAGE_KIND`, `AXIOMATIC_STORAGE_PATH`
 - MotherDuck auth: `AXIOMATIC_MOTHERDUCK_ACCESS_TOKEN`
@@ -79,6 +80,9 @@ For local validation from the project folder:
 ../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
 ../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
 ```
+
+Set `AXIOMATIC_DLT_PIPELINES_DIR=./.dlt/pipelines` to keep dlt runtime state local to
+this project and avoid path drift when moving the repository directory.
 
 The pair of ingestion runs above should be idempotent for `products` and `users` and deterministic for `carts`.
 

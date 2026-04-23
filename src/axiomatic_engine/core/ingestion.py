@@ -1,10 +1,14 @@
-import dlt
-from axiomatic_engine.contracts.warehouse import WarehouseProtocol
-from axiomatic_engine.sources.base import BaseSource
 import logging
 from time import perf_counter
+from typing import Any
+
+import dlt
+
+from axiomatic_engine.contracts.warehouse import WarehouseProtocol
+from axiomatic_engine.sources.base import BaseSource
 
 LOGGER = logging.getLogger(__name__)
+
 
 class Ingestor:
     """
@@ -14,8 +18,13 @@ class Ingestor:
      a WarehouseProtocol implementation using dlt.
     """
 
-    def __init__(self, warehouse: WarehouseProtocol):
+    def __init__(
+        self,
+        warehouse: WarehouseProtocol,
+        dlt_pipelines_dir: str | None = None,
+    ) -> None:
         self.warehouse = warehouse
+        self.dlt_pipelines_dir = dlt_pipelines_dir
 
     def run(self, source: BaseSource, dataset_name: str):
         """
@@ -25,10 +34,20 @@ class Ingestor:
         """
         LOGGER.info("Starting ingestion for source: %s", source.name)
 
+        destination = self.warehouse.get_dlt_destination()
+        credentials = self.warehouse.get_dlt_credentials()
+
+        pipeline_kwargs: dict[str, Any] = {
+            "pipeline_name": source.name,
+            "dataset_name": dataset_name,
+            "progress": "log",
+            "destination": destination,
+        }
+        if self.dlt_pipelines_dir is not None:
+            pipeline_kwargs["pipelines_dir"] = self.dlt_pipelines_dir
+
         pipeline = dlt.pipeline(
-            pipeline_name=source.name,
-            dataset_name=dataset_name,
-            progress="log",
+            **pipeline_kwargs,
         )
         LOGGER.info(
             "Starting dlt pipeline run for source: %s (extract, normalise, load)",
@@ -37,8 +56,8 @@ class Ingestor:
         load_start = perf_counter()
         load_info = pipeline.run(
             source.to_dlt(),
-            destination=self.warehouse.get_dlt_destination(),
-            credentials=self.warehouse.get_dlt_credentials(),
+            destination=destination,
+            credentials=credentials,
         )
         duration_s = perf_counter() - load_start
         LOGGER.info(

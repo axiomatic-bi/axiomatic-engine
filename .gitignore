@@ -17,6 +17,7 @@ data/
 *.duckdb.wal
 *.duckdb.shm
 *.tmp/
+.dlt/
 
 # Logs
 *.log

@@ -3,12 +3,28 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import sys
 
 from axiomatic_engine.adapters.transformation.dbt_adapter import DbtTransformationAdapter
 from axiomatic_engine.contracts.transformation import TransformationRequest
 
 
 class DbtTransformationAdapterTests(unittest.TestCase):
+    def test_build_command_uses_python_module_invocation(self) -> None:
+        adapter = DbtTransformationAdapter(
+            project_dir=Path("./projects/fake-store/dbt"),
+            profiles_dir=Path("./projects/fake-store/dbt"),
+            profile_name="fake_store",
+            target="dev",
+            run_tests=False,
+            adapter_package="dbt-duckdb",
+            expected_profile_type="duckdb",
+        )
+
+        command = adapter._build_command(subcommand="run")
+
+        self.assertEqual(command[0:4], [sys.executable, "-m", "dbt.cli.main", "run"])
+
     def test_run_executes_run_and_test_commands(self) -> None:
         adapter = DbtTransformationAdapter(
             project_dir=Path("./projects/fake-store/dbt"),
@@ -134,6 +150,37 @@ class DbtTransformationAdapterTests(unittest.TestCase):
             "dbt-duckdb",
         )
         self.assertNotIn("UNRELATED_SECRET", called_env)
+
+    def test_run_normalises_relative_duckdb_warehouse_path_in_environment(self) -> None:
+        adapter = DbtTransformationAdapter(
+            project_dir=Path("./projects/fake-store/dbt"),
+            profiles_dir=Path("./projects/fake-store/dbt"),
+            profile_name="fake_store",
+            target="dev",
+            run_tests=False,
+            adapter_package="dbt-duckdb",
+            expected_profile_type="duckdb",
+        )
+        request = TransformationRequest(
+            project_dir=Path("./projects/fake-store/dbt"),
+            warehouse_kind="duckdb",
+            environment={
+                "PATH": "fake-path",
+                "AXIOMATIC_WAREHOUSE_KIND": "duckdb",
+                "AXIOMATIC_WAREHOUSE_PATH": "data/fake_store.duckdb",
+            },
+        )
+
+        with patch(
+            "axiomatic_engine.adapters.transformation.dbt_adapter.subprocess.run"
+        ) as mock_run:
+            mock_run.return_value.returncode = 0
+            mock_run.return_value.stderr = ""
+
+            adapter.run(request=request)
+
+        called_env = mock_run.call_args.kwargs["env"]
+        self.assertTrue(Path(called_env["AXIOMATIC_WAREHOUSE_PATH"]).is_absolute())
 
     def test_run_rejects_non_motherduck_warehouse_kind(self) -> None:
         adapter = DbtTransformationAdapter(

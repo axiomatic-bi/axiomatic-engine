@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import os
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -72,11 +72,8 @@ class DbtTransformationAdapter(TransformationProtocol):
     def _build_command(self, subcommand: str) -> list[str]:
         resolved_project_dir = str(self.project_dir.resolve())
         resolved_profiles_dir = str(self.profiles_dir.resolve())
-
-        if shutil.which("dbt") is None:
-            command = [sys.executable, "-m", "dbt.cli.main", subcommand]
-        else:
-            command = ["dbt", subcommand]
+        # Use module invocation to avoid platform-specific launcher shims.
+        command = [sys.executable, "-m", "dbt.cli.main", subcommand]
 
         command.extend(
             [
@@ -132,7 +129,24 @@ class DbtTransformationAdapter(TransformationProtocol):
         if axiomatic_md_token and not environment.get("MOTHERDUCK_TOKEN"):
             environment["MOTHERDUCK_TOKEN"] = axiomatic_md_token
 
+        self._normalise_local_warehouse_path(environment=environment)
+
         return environment
+
+    def _normalise_local_warehouse_path(self, environment: dict[str, str]) -> None:
+        warehouse_kind = environment.get("AXIOMATIC_WAREHOUSE_KIND", "").strip().lower()
+        warehouse_path = environment.get("AXIOMATIC_WAREHOUSE_PATH", "").strip()
+
+        if warehouse_kind != "duckdb" or not warehouse_path:
+            return
+        if warehouse_path == ":memory:":
+            return
+        if "://" in warehouse_path or warehouse_path.startswith("md:"):
+            return
+        if os.path.isabs(warehouse_path):
+            return
+
+        environment["AXIOMATIC_WAREHOUSE_PATH"] = str(Path(warehouse_path).expanduser().resolve())
 
     def _sanitise_error_output(self, stderr: str) -> str:
         redacted = stderr.strip()

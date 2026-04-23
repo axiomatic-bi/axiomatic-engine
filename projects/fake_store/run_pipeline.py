@@ -32,6 +32,7 @@ def _parse_args() -> argparse.Namespace:
         default=None,
     )
     parser.add_argument("--warehouse-path", default=None)
+    parser.add_argument("--dlt-pipelines-dir", default=None)
     parser.add_argument("--schema-bronze", default=None)
     parser.add_argument("--schema-silver", default=None)
     parser.add_argument("--schema-gold", default=None)
@@ -129,6 +130,7 @@ def main() -> None:
         storage_path=args.storage_path,
         warehouse_kind=args.warehouse_kind,
         warehouse_path=args.warehouse_path,
+        dlt_pipelines_dir=args.dlt_pipelines_dir,
         bronze_schema_name=args.schema_bronze,
         silver_schema_name=args.schema_silver,
         gold_schema_name=args.schema_gold,

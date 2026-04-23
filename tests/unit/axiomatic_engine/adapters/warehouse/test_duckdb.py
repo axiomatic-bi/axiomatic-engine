@@ -22,6 +22,15 @@ class DuckDBWarehouseTests(unittest.TestCase):
             self.assertEqual(credentials, str(db_path))
             self.assertTrue(db_path.parent.exists())
 
+    def test_get_dlt_destination_returns_configured_duckdb_destination(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "nested" / "analytics.duckdb"
+            warehouse = DuckDBWarehouse(path=str(db_path))
+
+            destination = warehouse.get_dlt_destination()
+
+            self.assertEqual(getattr(destination, "destination_name", None), "duckdb")
+
 
 if __name__ == "__main__":
     unittest.main()

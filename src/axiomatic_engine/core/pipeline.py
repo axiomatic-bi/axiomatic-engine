@@ -29,7 +29,10 @@ class Pipeline:
         self.warehouse = get_warehouse_adapter(settings=settings.warehouse)
         self.warehouse_kind: WarehouseKind = settings.warehouse.kind
         self.schema_settings = settings.schema
-        self.ingestor = Ingestor(warehouse=self.warehouse)
+        self.ingestor = Ingestor(
+            warehouse=self.warehouse,
+            dlt_pipelines_dir=settings.dlt_pipelines_dir,
+        )
         self.transform_settings = settings.transform
         self.transformer: Transformer | None = None
 
