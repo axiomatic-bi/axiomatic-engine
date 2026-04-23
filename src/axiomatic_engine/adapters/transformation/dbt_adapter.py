@@ -93,15 +93,16 @@ class DbtTransformationAdapter(TransformationProtocol):
         return command
 
     def _validate_request(self, request: TransformationRequest) -> None:
-        if request.warehouse_kind != "motherduck":
+        if request.warehouse_kind not in {"motherduck", "duckdb"}:
             raise NotImplementedError(
-                "DbtTransformationAdapter currently supports only motherduck warehouse."
+                "DbtTransformationAdapter currently supports only motherduck and duckdb warehouses."
             )
 
     def _build_runtime_environment(self, request_environment: dict[str, str]) -> dict[str, str]:
         allowed_prefixes = (
             "AXIOMATIC_",
             "DBT_",
+            "DUCKDB_",
             "MOTHERDUCK_",
             "GOOGLE_",
             "AWS_",

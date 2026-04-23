@@ -60,6 +60,23 @@ class FactoryTests(unittest.TestCase):
         )
         self.assertIsInstance(adapter, DbtTransformationAdapter)
 
+    def test_get_transformation_adapter_returns_dbt_adapter_for_duckdb(self) -> None:
+        adapter = get_transformation_adapter(
+            transform_settings=TransformSettings(
+                enabled=True,
+                kind="dbt",
+                dbt_project_dir="./projects/fake-store/dbt",
+                dbt_profiles_dir="./projects/fake-store/dbt",
+                dbt_profile_name="fake_store",
+                dbt_target=None,
+                dbt_run_tests=True,
+            ),
+            warehouse_settings=DuckDBWarehouseSettings(
+                path="./data/local.duckdb",
+            ),
+        )
+        self.assertIsInstance(adapter, DbtTransformationAdapter)
+
     def test_get_transformation_adapter_rejects_not_enabled_warehouses(self) -> None:
         with self.assertRaises(NotImplementedError):
             get_transformation_adapter(

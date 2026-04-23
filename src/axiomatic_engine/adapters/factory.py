@@ -65,7 +65,7 @@ def _build_dbt_transformation_adapter(
     transform_settings: TransformSettings,
     warehouse_settings: WarehouseSettings,
 ) -> DbtTransformationAdapter:
-    if warehouse_settings.kind == "motherduck":
+    if warehouse_settings.kind in {"motherduck", "duckdb"}:
         return DbtTransformationAdapter(
             project_dir=Path(_require_value(transform_settings.dbt_project_dir, "dbt_project_dir")),
             profiles_dir=Path(
@@ -78,10 +78,6 @@ def _build_dbt_transformation_adapter(
             expected_profile_type="duckdb",
         )
 
-    if warehouse_settings.kind == "duckdb":
-        raise NotImplementedError(
-            "dbt transformations for duckdb warehouse are planned but not enabled yet."
-        )
     if warehouse_settings.kind == "bigquery":
         raise NotImplementedError(
             "dbt transformations for bigquery warehouse are planned but not enabled yet."

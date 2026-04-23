@@ -147,12 +147,39 @@ class DbtTransformationAdapterTests(unittest.TestCase):
         )
         request = TransformationRequest(
             project_dir=Path("./projects/fake-store/dbt"),
-            warehouse_kind="duckdb",
+            warehouse_kind="bigquery",
             environment={},
         )
 
         with self.assertRaises(NotImplementedError):
             adapter.run(request=request)
+
+    def test_run_accepts_duckdb_warehouse_kind(self) -> None:
+        adapter = DbtTransformationAdapter(
+            project_dir=Path("./projects/fake-store/dbt"),
+            profiles_dir=Path("./projects/fake-store/dbt"),
+            profile_name="fake_store",
+            target="dev",
+            run_tests=False,
+            adapter_package="dbt-duckdb",
+            expected_profile_type="duckdb",
+        )
+        request = TransformationRequest(
+            project_dir=Path("./projects/fake-store/dbt"),
+            warehouse_kind="duckdb",
+            environment={"PATH": "fake-path"},
+        )
+
+        with patch(
+            "axiomatic_engine.adapters.transformation.dbt_adapter.subprocess.run"
+        ) as mock_run:
+            mock_run.return_value.returncode = 0
+            mock_run.return_value.stderr = ""
+
+            result = adapter.run(request=request)
+
+        self.assertEqual(result.status, "succeeded")
+        self.assertEqual(mock_run.call_count, 1)
 
 
 if __name__ == "__main__":
