@@ -7,7 +7,7 @@ select
     cast(id as bigint) as product_id,
     cast(title as varchar) as title,
     cast(description as varchar) as description,
-    cast(category as varchar) as category,
+    initcap(trim(cast(category as varchar))) as category,
     cast(image as varchar) as image,
     cast(price as double) as price,
     cast(rating__rate as double) as rating_rate,
