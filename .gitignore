@@ -1,14 +1,24 @@
 # Python-generated files
 __pycache__/
-*.py[oc]
+*.py[cod]
 .pytest_cache/
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+ENV/
+
+# dbt-generated files
+target/
+dbt_packages/
+dbt_modules/  # legacy
+logs/
+%SystemDrive%/
 
 # Data
 data/
@@ -21,7 +31,6 @@ data/
 
 # Logs
 *.log
-logs/
 
 # Local editor/agent state
 .cursor/
@@ -35,6 +44,7 @@ logs/
 
 # Environment variables and secret patterns
 .env
+.env.*
 *-credentials.json
 secrets/
 credentials/
