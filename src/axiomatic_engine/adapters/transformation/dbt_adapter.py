@@ -58,6 +58,7 @@ class DbtTransformationAdapter(TransformationProtocol):
                     details={
                         "command": " ".join(command),
                         "return_code": str(completed.returncode),
+                        "stdout": self._sanitise_error_output(completed.stdout),
                         "stderr": self._sanitise_error_output(completed.stderr),
                     },
                 )
