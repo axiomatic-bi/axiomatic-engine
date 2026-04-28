@@ -28,6 +28,7 @@ class Pipeline:
         self.storage = get_storage_adapter(settings=settings.storage)
         self.warehouse = get_warehouse_adapter(settings=settings.warehouse)
         self.warehouse_kind: WarehouseKind = settings.warehouse.kind
+        self.warehouse_path = settings.warehouse.path
         self.schema_settings = settings.schema
         self.ingestor = Ingestor(
             warehouse=self.warehouse,
@@ -100,3 +101,15 @@ class Pipeline:
             LOGGER.info("Pipeline completed with transformations.")
         else:
             LOGGER.info("Pipeline completed without transformations.")
+
+        LOGGER.info("Warehouse location: %s", self._warehouse_location_label())
+
+    def _warehouse_location_label(self) -> str:
+        if self.warehouse_kind == "duckdb":
+            if self.warehouse_path == ":memory:":
+                return "DuckDB in-memory database (:memory:)"
+            resolved_path = Path(self.warehouse_path).expanduser().resolve()
+            return f"DuckDB file at {resolved_path}"
+        if self.warehouse_kind == "motherduck":
+            return f"MotherDuck database {self.warehouse_path}"
+        return f"{self.warehouse_kind} warehouse at {self.warehouse_path}"

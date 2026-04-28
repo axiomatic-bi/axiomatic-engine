@@ -58,6 +58,7 @@ class DbtTransformationAdapter(TransformationProtocol):
                     details={
                         "command": " ".join(command),
                         "return_code": str(completed.returncode),
+                        "stdout": self._sanitise_error_output(completed.stdout),
                         "stderr": self._sanitise_error_output(completed.stderr),
                     },
                 )
@@ -148,8 +149,8 @@ class DbtTransformationAdapter(TransformationProtocol):
 
         environment["AXIOMATIC_WAREHOUSE_PATH"] = str(Path(warehouse_path).expanduser().resolve())
 
-    def _sanitise_error_output(self, stderr: str) -> str:
-        redacted = stderr.strip()
+    def _sanitise_error_output(self, raw_output: object) -> str:
+        redacted = str(raw_output or "").strip()
         redaction_patterns = (
             r"(?i)(motherduck_token=)[^&\s]+",
             r"(?i)(access_token=)[^&\s]+",
