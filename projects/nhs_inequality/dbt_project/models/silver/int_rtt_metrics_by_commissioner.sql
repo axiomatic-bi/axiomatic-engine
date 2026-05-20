@@ -17,7 +17,7 @@
 select
     period,
 
-    -- Commissioner organization (who pays)
+    -- Commissioner organisation (who pays)
     commissioner_org_code,
     commissioner_org_name,
     commissioner_parent_org_code,

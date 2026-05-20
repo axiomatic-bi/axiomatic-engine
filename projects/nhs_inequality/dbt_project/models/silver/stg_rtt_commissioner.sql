@@ -7,23 +7,35 @@
 
 --
 -- Silver staging: RTT commissioner data
--- Source: dlt-ingested bronze table
+-- Source: dlt-ingested bronze tables (one per month, Apr 2024 – Mar 2025)
 -- Grain: Provider x Commissioner x RTT Part Type x Period
 --
--- Performs casting and column renaming from raw NHS CSV format
+-- All 12 monthly bronze tables are unioned here.
+-- Each month lands in its own bronze table (rtt_commissioner_{month_key})
+-- via write_disposition='replace', so UNION ALL is the correct join strategy.
 --
+-- Performs casting and column renaming from raw NHS CSV format.
+--
+
+{% set rtt_months = [
+    'apr24', 'may24', 'jun24', 'jul24',
+    'aug24', 'sep24', 'oct24', 'nov24',
+    'dec24', 'jan25', 'feb25', 'mar25'
+] %}
+
+{% for month in rtt_months %}
 
 select
     -- Period
     "Period" as period,
 
-    -- Provider organization (where treatment happens)
+    -- Provider organisation (where treatment happens)
     "Provider Parent Org Code" as provider_parent_org_code,
     "Provider Parent Name" as provider_parent_name,
     "Provider Org Code" as provider_org_code,
     "Provider Org Name" as provider_org_name,
 
-    -- Commissioner organization (who pays)
+    -- Commissioner organisation (who pays)
     "Commissioner Parent Org Code" as commissioner_parent_org_code,
     "Commissioner Parent Name" as commissioner_parent_name,
     "Commissioner Org Code" as commissioner_org_code,
@@ -161,4 +173,8 @@ select
     _dlt_load_id as load_id,
     _dlt_id as record_id
 
-from {{ source('nhs_rtt_bronze_ingest', 'rtt_commissioner_mar25') }}
+from {{ source('nhs_rtt_bronze_ingest', 'rtt_commissioner_' ~ month) }}
+
+{% if not loop.last %}union all{% endif %}
+
+{% endfor %}

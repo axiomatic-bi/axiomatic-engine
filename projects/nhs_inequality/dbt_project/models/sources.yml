@@ -4,6 +4,116 @@ sources:
   - name: nhs_rtt_bronze_ingest
     schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
     tables:
+      - name: rtt_commissioner_apr24
+        description: "RTT commissioner-level data for April 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_may24
+        description: "RTT commissioner-level data for May 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jun24
+        description: "RTT commissioner-level data for June 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jul24
+        description: "RTT commissioner-level data for July 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_aug24
+        description: "RTT commissioner-level data for August 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_sep24
+        description: "RTT commissioner-level data for September 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_oct24
+        description: "RTT commissioner-level data for October 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_nov24
+        description: "RTT commissioner-level data for November 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_dec24
+        description: "RTT commissioner-level data for December 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jan25
+        description: "RTT commissioner-level data for January 2025"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_feb25
+        description: "RTT commissioner-level data for February 2025"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
       - name: rtt_commissioner_mar25
         description: "RTT commissioner-level data for March 2025"
         columns:
@@ -44,6 +154,11 @@ models:
 
   - name: int_icb_waiting_metrics
     description: "ICB-level aggregated waiting metrics"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - icb_code
+            - period
     columns:
       - name: period
         tests:
@@ -51,7 +166,6 @@ models:
       - name: icb_code
         tests:
           - not_null
-          - unique
       - name: total_waiting_list
         tests:
           - not_null
@@ -116,6 +230,12 @@ models:
   # Gold fact tests
   - name: fct_icb_waiting_times
     description: "Star schema fact table for ICB waiting times"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - period
+            - icb_code
+            - rtt_part_type
     columns:
       - name: period
         tests:

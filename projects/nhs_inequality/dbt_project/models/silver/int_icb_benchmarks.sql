@@ -6,14 +6,33 @@
 }}
 
 --
--- ICB benchmarks: Official England and regional totals from source
+-- ICB benchmarks: Official England/regional totals + ICB peer averages
 -- Grain: Period x Level (England/Region)
 --
--- Extracts TRUE NHS England/region aggregates (not calculated peer averages)
--- Naming honesty: england_* = official source totals, never peer averages
+-- Naming honesty:
+--   england_* = official source totals from NHS England rows in the data
+--   icb_avg_* = arithmetic mean across ICBs (peer average, not official)
+--   icb_best_* / icb_worst_* = best/worst ICB value in that period
 --
 
-with england_totals as (
+with icb_peer_averages as (
+    -- Peer statistics across ICBs (explicitly not official NHS England totals)
+    select
+        period,
+        avg(pct_within_18_weeks)  as icb_avg_pct_within_18_weeks,
+        max(pct_within_18_weeks)  as icb_best_pct_within_18_weeks,
+        min(pct_within_18_weeks)  as icb_worst_pct_within_18_weeks,
+        avg(pct_over_52_weeks)    as icb_avg_pct_over_52_weeks,
+        avg(pct_over_65_weeks)    as icb_avg_pct_over_65_weeks,
+        avg(pct_over_78_weeks)    as icb_avg_pct_over_78_weeks,
+        avg(pct_over_104_weeks)   as icb_avg_pct_over_104_weeks
+    from {{ ref('int_icb_waiting_metrics') }}
+    where not is_england_level
+      and not is_regional_level
+    group by period
+),
+
+england_totals as (
     -- England-level records: null/empty parent or 'X%' pattern
     select
         period,
@@ -118,6 +137,15 @@ select
     england_pct_over_78_weeks,
     england_pct_over_104_weeks,
 
+    -- ICB peer averages (England row only)
+    p.icb_avg_pct_within_18_weeks,
+    p.icb_best_pct_within_18_weeks,
+    p.icb_worst_pct_within_18_weeks,
+    p.icb_avg_pct_over_52_weeks,
+    p.icb_avg_pct_over_65_weeks,
+    p.icb_avg_pct_over_78_weeks,
+    p.icb_avg_pct_over_104_weeks,
+
     -- Region fields (null for England rows)
     cast(null as varchar) as region_parent_code,
     cast(null as bigint) as region_total_waiting_list,
@@ -134,7 +162,8 @@ select
     cast(null as decimal(10,2)) as region_pct_over_78_weeks,
     cast(null as decimal(10,2)) as region_pct_over_104_weeks
 
-from england_totals
+from england_totals e
+join icb_peer_averages p on e.period = p.period
 
 union all
 
@@ -158,6 +187,15 @@ select
     cast(null as decimal(10,2)) as england_pct_over_65_weeks,
     cast(null as decimal(10,2)) as england_pct_over_78_weeks,
     cast(null as decimal(10,2)) as england_pct_over_104_weeks,
+
+    -- ICB peer averages (null for region rows — region-level peer averages deferred)
+    cast(null as decimal(10,2)) as icb_avg_pct_within_18_weeks,
+    cast(null as decimal(10,2)) as icb_best_pct_within_18_weeks,
+    cast(null as decimal(10,2)) as icb_worst_pct_within_18_weeks,
+    cast(null as decimal(10,2)) as icb_avg_pct_over_52_weeks,
+    cast(null as decimal(10,2)) as icb_avg_pct_over_65_weeks,
+    cast(null as decimal(10,2)) as icb_avg_pct_over_78_weeks,
+    cast(null as decimal(10,2)) as icb_avg_pct_over_104_weeks,
 
     -- Region fields
     region_parent_code,

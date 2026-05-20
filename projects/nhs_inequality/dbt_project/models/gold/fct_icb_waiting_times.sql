@@ -10,7 +10,7 @@
 -- Grain: ICB × Period × RTT Part Type
 --
 -- Degenerate dimension keys: period, icb_code, rtt_part_type (SK=BK pattern)
--- Denormalized attributes for query convenience
+-- Denormalised attributes for query convenience
 -- Long-wait tail focus: 52+, 65+, 78+, 104+ week metrics emphasized
 --
 
@@ -71,7 +71,7 @@ select
     i.rtt_part_type,
 
     -- ========================================
-    -- DENORMALIZED DIMENSION ATTRIBUTES
+    -- DENORMALISED DIMENSION ATTRIBUTES
     -- ========================================
     i.icb_name,
     i.region_code,

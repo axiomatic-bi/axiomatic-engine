@@ -10,7 +10,8 @@ This portfolio project demonstrates the Axiomatic Engine's capabilities for publ
 
 ### RTT (Referral to Treatment) Waiting Times
 - **Source**: NHS England Statistics (CSV in ZIP via HTTP)
-- **URL**: `https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/07/Full-CSV-data-file-Mar25-ZIP-4M-revised.zip`
+- **URL pattern**: `https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/{publish_year}/{publish_month}/Full-CSV-data-file-{Mon}{YY}-ZIP-{size}-revised.zip`
+- **Coverage**: 12 months — April 2024 to March 2025 (full 2024-25 NHS fiscal year)
 - **Data**: Monthly snapshots, commissioner-level aggregation
 - **Key Fields**: Organisation code, treatment function code, waiting time bands, patient counts
 
@@ -93,6 +94,7 @@ uv run projects/nhs_inequality/run_pipeline.py --run-transforms \
 ## Phase Status
 
 - **Phase 1**: ✅ Complete - Engine ZIP streaming support in `http_stream.py`
-- **Phase 2**: ✅ Complete - RTT single month ingestion (185,101 rows ingested to bronze)
+- **Phase 2**: ✅ Complete - RTT ingestion (185,101 rows for March 2025 to bronze)
 - **Phase 3**: ✅ Complete - Star schema dbt models (gold layer with degenerate dimension keys)
+- **Phase 6**: ✅ Complete - 12-month time series (Apr 2024–Mar 2025); separate bronze table per month; `--months` CLI flag for selective reload; UNION ALL staging; composite grain tests
 - **Phase 4+**: Deferred - ODS & IMD integration (v1.1)

@@ -102,3 +102,5 @@ group by
     commissioner_parent_name
 
 having sum(total_waiting_list) > 0
+-- Exclude ICBs with no reported patients: prevents division-by-zero in downstream
+-- percentage calculations and suppresses empty submissions (e.g. non-reporting months)

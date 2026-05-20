@@ -46,7 +46,7 @@ select
     region_code,
     region_name,
 
-    -- Organization level classification (all ICB-level in this dimension)
+    -- Organisation level classification (all ICB-level in this dimension)
     'ICB' as org_level,
 
     -- v1.1 Extension points (null for now, ready for IMD enrichment)
