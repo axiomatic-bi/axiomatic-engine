@@ -1,0 +1,31 @@
+name: "nhs_inequality"
+version: "1.0.0"
+config-version: 2
+
+profile: "nhs_inequality"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  nhs_inequality:
+    bronze:
+      +materialized: view
+      +schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
+    silver:
+      +materialized: view
+      +schema: "{{ env_var('AXIOMATIC_SCHEMA_SILVER', 'silver') }}"
+    gold:
+      +materialized: table
+      +schema: "{{ env_var('AXIOMATIC_SCHEMA_GOLD', 'gold') }}"
+    analytics:
+      +materialized: view
+      +schema: "{{ env_var('AXIOMATIC_SCHEMA_ANALYTICS', 'analytics') }}"

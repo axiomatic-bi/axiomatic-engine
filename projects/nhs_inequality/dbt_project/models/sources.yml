@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: nhs_rtt_bronze_ingest
+    schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
+    tables:
+      - name: rtt_commissioner_mar25
+        description: "RTT commissioner-level data for March 2025"
