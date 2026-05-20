@@ -20,14 +20,51 @@ This portfolio project demonstrates the Axiomatic Engine's capabilities for publ
 projects/nhs_inequality/
 ├── run_pipeline.py               # Entrypoint for ingestion
 ├── dbt_project/
-│   ├── dbt_project.yml          # dbt configuration
-│   ├── profiles.yml             # DuckDB connection
+│   ├── dbt_project.yml            # dbt configuration
+│   ├── profiles.yml               # DuckDB connection
 │   └── models/
-│       ├── sources.yml          # Source definitions
-│       └── bronze/
-│           └── stg_rtt_commissioner.sql
-└── README.md                    # This file
+│       ├── sources.yml            # Source definitions + tests
+│       ├── silver/
+│       │   ├── stg_rtt_commissioner.sql       # Bronze→Silver staging
+│       │   ├── int_rtt_metrics_by_commissioner.sql  # Derived breach counts
+│       │   ├── int_icb_waiting_metrics.sql    # ICB-level aggregation
+│       │   └── int_icb_benchmarks.sql         # England/regional official totals
+│       └── gold/
+│           ├── dim_icb.sql        # ICB dimension (SK=BK pattern)
+│           ├── dim_period.sql     # Period dimension (SK=BK pattern)
+│           ├── dim_rtt_pathway.sql  # Pathway type dimension
+│           ├── fct_icb_waiting_times.sql  # Star schema fact table
+│           └── fct_waiting_times_by_icb.sql  # Original benchmark fact table
+└── README.md                      # This file
 ```
+
+## Star Schema Design
+
+### Fact Table: `fct_icb_waiting_times`
+**Grain:** ICB × Period × RTT Part Type
+
+| Column | Description |
+|--------|-------------|
+| `period` | Period dimension FK (degenerate) |
+| `icb_code` | ICB dimension FK (degenerate) |
+| `rtt_part_type` | Pathway dimension FK (degenerate) |
+| `total_waiting_list` | Total patients on list |
+| `count_over_52_weeks` | Patients 52+ weeks (inequity signal) |
+| `pct_over_52_weeks` | % over 52 weeks |
+| `long_wait_tail_index` | Custom metric: (pct_52+)^2 - emphasizes tail concentration |
+| `variance_from_england_18wk` | Deviation from official England benchmark |
+| `performance_vs_england` | Categorical performance assessment |
+
+### Dimension Tables
+- **`dim_icb`** (SK=BK: `icb_code`) - ICB attributes with v1.1 extension points for deprivation data
+- **`dim_period`** (SK=BK: `period`) - Calendar attributes with NHS fiscal year
+- **`dim_rtt_pathway`** (SK=BK: `rtt_part_type`) - Pathway type descriptions and categories
+
+### Key Design Principles
+- **SK=BK Pattern:** Business keys = surrogate keys (stable, meaningful identifiers)
+- **Honest Benchmark Naming:** `england_*` = official NHS England totals from source (not peer averages)
+- **Long-Wait Focus:** 52+, 65+, 78+, 104+ week metrics prioritized for inequity analysis
+- **Extension Ready:** Business key pattern enables trivial v1.1 deprivation enrichment
 
 ## Usage
 
@@ -44,13 +81,18 @@ uv run projects/nhs_inequality/run_pipeline.py --run-transforms \
   --dbt-profile-name nhs_inequality
 ```
 
-## Analytical Approach
-
-This project uses NHS England RTT full-extract data which contains both provider and commissioner context. The commissioner fields allow analysis at ICB/sub-ICB/region/England grains without requiring separate ODS lookups.
+Run with dbt tests:
+```bash
+uv run projects/nhs_inequality/run_pipeline.py --run-transforms \
+  --dbt-project-dir ./projects/nhs_inequality/dbt_project \
+  --dbt-profiles-dir ./projects/nhs_inequality/dbt_project \
+  --dbt-profile-name nhs_inequality \
+  --dbt-run-tests
+```
 
 ## Phase Status
 
 - **Phase 1**: ✅ Complete - Engine ZIP streaming support in `http_stream.py`
 - **Phase 2**: ✅ Complete - RTT single month ingestion (185,101 rows ingested to bronze)
-- **Phase 3**: In Progress - dbt models and analysis
+- **Phase 3**: ✅ Complete - Star schema dbt models (gold layer with degenerate dimension keys)
 - **Phase 4+**: Deferred - ODS & IMD integration (v1.1)

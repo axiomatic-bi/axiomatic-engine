@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from axiomatic_engine.config.engine import EngineSettings
 from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.core.pipeline import Pipeline
-from axiomatic_engine.sources.base import BaseSource
 from axiomatic_engine.sources.factory import HttpFileSourceDefinition, build_source
 from axiomatic_engine.sources.file import HttpFileResourceDefinition
 
