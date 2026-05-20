@@ -69,4 +69,36 @@ Format: `NNN-title.md`
 
 ---
 
-**Next Steps**: Create GitHub issues for Phase 1 work (ZIP streaming)
+## Current Status
+
+### NHS Inequality Analysis Project v1
+
+| Phase | Status | Branch | Notes |
+|-------|--------|--------|-------|
+| 1. Engine ZIP Support | **Done** | `feat/1-zip-streaming` | Implemented, tested, committed |
+| 2. RTT Ingestion | **Todo** | TBD | Create `projects/nhs_inequality/` |
+| 3. Analysis Models | **Todo** | TBD | dbt models for ICB patterns |
+| 4. ODS/IMD | **Deferred v1.1** | - | See ADR-001 |
+| 5-7. Models/Docs | **Todo** | TBD | After Phase 2-3 |
+
+### Latest Commit
+- Branch: `feat/1-zip-streaming`
+- Status: ZIP streaming implemented in `http_stream.py`
+- Tests: 53 passed
+- Pre-commit: Passed
+- Next: Push branch, create PR, start Phase 2
+
+### Bootstrap for New Chat
+```
+Working on NHS inequality project v1. 
+Phase 1 complete (ZIP streaming in http_stream.py).
+Starting Phase 2 per docs/plans/current/nhs-inequality-v1.md.
+Branch: feat/1-zip-streaming
+```
+
+---
+
+**Next Steps**: 
+1. Push `feat/1-zip-streaming` branch
+2. Create GitHub issue #1 (retroactively) or PR directly
+3. Start Phase 2: Create `projects/nhs_inequality/` structure
