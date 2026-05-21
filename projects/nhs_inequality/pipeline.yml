@@ -38,17 +38,19 @@ source:
       archive_member: 20240930-RTT-September-2024-full-extract-revised.csv
       delimiter: ","
 
-    - name: rtt_commissioner_oct24
-      url: https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/02/Full-CSV-data-file-Oct24-ZIP-4M-revised.zip
-      archive_format: zip
-      archive_member: 20241031-RTT-October-2024-full-extract-revised.csv
-      delimiter: ","
+    # NOTE: Oct24 and Nov24 revised files temporarily unavailable from NHS England site.
+    # Uncomment when URLs become available again.
+    # - name: rtt_commissioner_oct24
+    #   url: https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/02/Full-CSV-data-file-Oct24-ZIP-4M-revised.zip
+    #   archive_format: zip
+    #   archive_member: 20241031-RTT-October-2024-full-extract-revised.csv
+    #   delimiter: ","
 
-    - name: rtt_commissioner_nov24
-      url: https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/02/Full-CSV-data-file-Nov24-ZIP-4M-revised.zip
-      archive_format: zip
-      archive_member: 20241130-RTT-November-2024-full-extract-revised.csv
-      delimiter: ","
+    # - name: rtt_commissioner_nov24
+    #   url: https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/02/Full-CSV-data-file-Nov24-ZIP-4M-revised.zip
+    #   archive_format: zip
+    #   archive_member: 20241130-RTT-November-2024-full-extract-revised.csv
+    #   delimiter: ","
 
     - name: rtt_commissioner_dec24
       url: https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/07/Full-CSV-data-file-Dec24-ZIP-4M-revised.zip
