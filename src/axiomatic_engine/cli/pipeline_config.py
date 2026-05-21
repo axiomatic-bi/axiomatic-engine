@@ -23,6 +23,7 @@ from axiomatic_engine.sources.file.http_stream import (
     HttpFileResourceDefinition,
     HttpFileSourceDefinition,
 )
+from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.sources.rest.base import RestApiResourceDefinition
 
 _ENV_VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::([^}]*))?\}")
@@ -141,10 +142,22 @@ def _parse_rest_api_source(name: str, block: dict[str, Any]) -> RestApiSourceDef
             raise PipelineConfigError(
                 "Each rest_api resource must have a 'name' field."
             )
+
+        # Parse optional load_hints
+        hints_block = r.get("load_hints")
+        load_hints: ResourceLoadHints | None = None
+        if hints_block:
+            load_hints = ResourceLoadHints(
+                write_disposition=hints_block.get("write_disposition"),
+                primary_key=hints_block.get("primary_key"),
+                schema_evolution_mode=hints_block.get("schema_evolution_mode"),
+            )
+
         resources.append(
             RestApiResourceDefinition(
                 name=res_name,
                 endpoint_path=endpoint,
+                load_hints=load_hints,
             )
         )
 
