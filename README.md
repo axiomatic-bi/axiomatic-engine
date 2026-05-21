@@ -6,19 +6,42 @@ Axiomatic Engine orchestrates ingestion and transformation pipelines while keepi
 
 Install the package:
 
-- `uv add axiomatic-engine`
+```bash
+uv add axiomatic-engine
+```
 
 Or with pip:
 
-- `pip install axiomatic-engine`
+```bash
+pip install axiomatic-engine
+```
 
-Run a project entrypoint:
+### New Project (Declarative Workflow)
 
-- copy `projects/fake_store/.env.example` to `projects/fake_store/.env`
-- set required environment variables for your target warehouse and storage
-- run `uv run python projects/fake_store/run_pipeline.py`
+Scaffold a new client project:
 
-This gives a working reference for a REST ingestion source and transformation flow using the engine contracts.
+```bash
+axiomatic-engine init --project my_client --template minimal
+cd my_client
+# Edit pipeline.yml to add your source URLs
+axiomatic-engine run --config pipeline.yml
+```
+
+### Example Projects
+
+Reference implementations in `projects/` show both workflows:
+
+**Declarative (NEW)** — zero Python required:
+```bash
+cd projects/fake_store
+axiomatic-engine run --config pipeline.yml
+```
+
+**Imperative (Legacy)** — for advanced customization:
+```bash
+cd projects/fake_store
+python run_pipeline.py
+```
 
 ## Contributor Quickstart
 
@@ -46,14 +69,77 @@ This keeps medallion naming explicit and consistent across ingestion and dbt mod
 
 ## Source Routing Contract
 
-Source implementations now expose specific source kinds:
+Source implementations expose specific source kinds for declarative configuration:
 
-- `rest_api`
-- `http_file`
+- `rest_api` — JSON REST endpoints with pagination support
+- `http_file` — HTTP file downloads (CSV, ZIP archives)
 
-The standard project path is typed source definitions routed through `axiomatic_engine.sources.factory` via `build_source(...)`.
+### Declarative Configuration (pipeline.yml)
 
-Direct source constructors remain supported for advanced project-specific customisation.
+```yaml
+source:
+  kind: http_file
+  name: my_source
+  resources:
+    - name: data_file
+      url: https://example.com/data.csv
+      archive_format: zip
+      archive_member: data.csv
+
+warehouse:
+  kind: duckdb
+  path: "${AXIOMATIC_WAREHOUSE_PATH:./data/warehouse.duckdb}"
+
+transform:
+  enabled: true
+  dbt_project_dir: ./dbt_project
+  dbt_profile_name: my_project
+```
+
+### Imperative Construction (Python)
+
+Direct source constructors remain supported for advanced use cases:
+
+```python
+from axiomatic_engine.sources.factory import build_source, HttpFileSourceDefinition
+
+source = build_source(HttpFileSourceDefinition(...))
+```
+
+## CLI Commands
+
+The engine provides a unified CLI for pipeline operations:
+
+### `init` — Scaffold New Project
+
+```bash
+axiomatic-engine init --project my_client --template minimal
+```
+
+Creates a complete project with `pipeline.yml`, dbt structure, and `.ai/` context files.
+
+### `run` — Execute Pipeline
+
+```bash
+# Full pipeline (ingestion + transforms)
+axiomatic-engine run --config pipeline.yml
+
+# Ingestion only
+axiomatic-engine run --config pipeline.yml --skip-transforms
+
+# Force re-download (ignore cache)
+axiomatic-engine run --config pipeline.yml --force-reload
+```
+
+### `generate-staging` — Create Silver Models
+
+```bash
+# Generate staging model for a resource
+axiomatic-engine generate-staging --config pipeline.yml --source my_source --resource my_table
+
+# Show diff against existing file
+axiomatic-engine generate-staging --config pipeline.yml --source my_source --diff
+```
 
 ## Ingestion Resource Load Hints
 
