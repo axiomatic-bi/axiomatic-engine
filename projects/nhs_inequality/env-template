@@ -1,0 +1,19 @@
+# Environment template for NHS Inequality project
+# Copy to .env and customize as needed
+
+# Logging
+LOG_LEVEL=INFO
+
+# Warehouse configuration
+AXIOMATIC_WAREHOUSE_KIND=duckdb
+AXIOMATIC_WAREHOUSE_PATH=./data/warehouse.duckdb
+
+# Schema names
+AXIOMATIC_SCHEMA_BRONZE=bronze
+AXIOMATIC_SCHEMA_SILVER=silver
+AXIOMATIC_SCHEMA_GOLD=gold
+AXIOMATIC_SCHEMA_ANALYTICS=analytics
+
+# dbt configuration
+AXIOMATIC_DBT_PROJECT_DIR=./dbt_project
+AXIOMATIC_DBT_PROFILES_DIR=./dbt_project

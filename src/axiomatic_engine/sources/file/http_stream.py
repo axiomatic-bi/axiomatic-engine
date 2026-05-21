@@ -6,6 +6,7 @@ import gzip
 import io
 import logging
 from urllib.parse import urlparse
+import zipfile
 
 from typing import Any, BinaryIO, IO, Iterable, Literal, cast
 
@@ -21,6 +22,7 @@ from axiomatic_engine.sources.base import BaseSource
 LOGGER = logging.getLogger(__name__)
 
 CompressionKind = Literal["gzip", "none"]
+ArchiveFormatKind = Literal["zip"]
 DEFAULT_PROGRESS_LOG_EVERY_ROWS = 100_000
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
@@ -35,6 +37,8 @@ class HttpFileResourceDefinition:
     url: str
     delimiter: str | None = None
     compression: CompressionKind | None = None
+    archive_format: ArchiveFormatKind | None = None
+    archive_member: str | None = None
     progress_log_every_rows: int = DEFAULT_PROGRESS_LOG_EVERY_ROWS
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
     load_hints: ResourceLoadHints | None = None
@@ -54,6 +58,7 @@ class HttpFileSourceDefinition:
 class HttpStreamResource(ResourceProtocol):
     """
     Implementation of ResourceProtocol for downloading delimited files over HTTP.
+    Supports archive extraction (e.g., ZIP) and compression (e.g., gzip).
     """
 
     def __init__(
@@ -62,6 +67,8 @@ class HttpStreamResource(ResourceProtocol):
         url: str,
         delimiter: str | None = None,
         compression: CompressionKind | None = None,
+        archive_format: ArchiveFormatKind | None = None,
+        archive_member: str | None = None,
         progress_log_every_rows: int = DEFAULT_PROGRESS_LOG_EVERY_ROWS,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         load_hints: ResourceLoadHints | None = None,
@@ -70,6 +77,8 @@ class HttpStreamResource(ResourceProtocol):
         self.url = url
         self.delimiter = delimiter or self._infer_delimiter(url)
         self.compression = compression or self._infer_compression(url)
+        self.archive_format = archive_format or self._infer_archive_format(url)
+        self.archive_member = archive_member
         self.progress_log_every_rows = progress_log_every_rows
         self.timeout_seconds = timeout_seconds
         self._load_hints = load_hints
@@ -97,18 +106,58 @@ class HttpStreamResource(ResourceProtocol):
             return "\t"
         return ","
 
+    @staticmethod
+    def _infer_archive_format(url: str) -> ArchiveFormatKind | None:
+        """
+        Infer archive format from URL path so resources remain declarative.
+        Returns None if URL does not indicate an archive.
+        """
+        path = urlparse(url).path.lower()
+        if path.endswith(".zip"):
+            return "zip"
+        return None
+
     def _get_stream(self, raw_stream: BinaryIO) -> IO[str]:
         """Helper to handle decompression based on configuration."""
         if self.compression == "gzip":
             return gzip.open(raw_stream, mode="rt", encoding="utf-8")
         return io.TextIOWrapper(raw_stream, encoding="utf-8")
 
+    def _extract_from_archive(self, raw_bytes: bytes) -> BinaryIO:
+        """
+        Extract a member file from an archive into a BytesIO stream.
+        Supports ZIP format; extensible for tar/7z in future.
+        """
+        if self.archive_format == "zip":
+            return self._extract_from_zip(raw_bytes)
+        raise ValueError(f"Unsupported archive format: {self.archive_format}")
+
+    def _extract_from_zip(self, raw_bytes: bytes) -> BinaryIO:
+        """
+        Extract a specific member from a ZIP archive.
+        If archive_member is not specified, extracts the first file found.
+        """
+        zip_buffer = io.BytesIO(raw_bytes)
+        with zipfile.ZipFile(zip_buffer, "r") as zf:
+            if self.archive_member:
+                member_name = self.archive_member
+            else:
+                # Default to first file in archive
+                member_list = zf.namelist()
+                if not member_list:
+                    raise ValueError(f"ZIP archive at {self.url} is empty")
+                member_name = member_list[0]
+
+            member_data = zf.read(member_name)
+            return io.BytesIO(member_data)
+
     def read(self) -> Iterable[dict[str, Any]]:
         """Streams data according to the configured format."""
         LOGGER.info(
-            "Streaming resource '%s' from %s (compression=%s, delimiter=%r)",
+            "Streaming resource '%s' from %s (archive_format=%s, compression=%s, delimiter=%r)",
             self.name,
             self.url,
+            self.archive_format,
             self.compression,
             self.delimiter,
         )
@@ -116,7 +165,15 @@ class HttpStreamResource(ResourceProtocol):
         with requests.get(self.url, stream=True, timeout=self.timeout_seconds) as response:
             response.raise_for_status()
 
-            with self._get_stream(cast(BinaryIO, response.raw)) as stream:
+            # Handle archive extraction if needed
+            if self.archive_format:
+                # For archives, we need to buffer to extract
+                raw_bytes = response.content
+                raw_stream = self._extract_from_archive(raw_bytes)
+            else:
+                raw_stream = cast(BinaryIO, response.raw)
+
+            with self._get_stream(raw_stream) as stream:
                 reader = csv.DictReader(stream, delimiter=self.delimiter)
                 for row in reader:
                     row_count += 1
@@ -159,6 +216,8 @@ class HttpStreamSource(BaseSource):
                 url=resource.url,
                 delimiter=resource.delimiter,
                 compression=resource.compression,
+                archive_format=resource.archive_format,
+                archive_member=resource.archive_member,
                 progress_log_every_rows=resource.progress_log_every_rows,
                 timeout_seconds=resource.timeout_seconds,
                 load_hints=resource.load_hints,

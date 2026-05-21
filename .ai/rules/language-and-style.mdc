@@ -1,0 +1,20 @@
+---
+description: British English and professional technical writing conventions
+alwaysApply: true
+---
+
+# Language and Style Standards
+
+## British English Policy
+- Use British English spelling throughout: optimise, normalise, generalised, organisation, modelling.
+- Apply to documentation, comments, and user-facing copy.
+- Exception: Third-party API parameters (e.g., `organization_id` if required by an external SDK).
+
+## Naming & Branding
+- **No Brand Stuttering:** Within the `axiomatic_engine` package, do not prefix classes with "Axiomatic". Use `Source`, `Resource`, `Pipeline`. The namespace provides the brand.
+- **Explicit Naming:** Favour `RawFileReference` over `FileRef`. Use `connection_uri` over `url`.
+- **Typing:** Always use explicit type hints. Prefer `BinaryIO` and `Iterable[dict]` for data streams to ensure memory efficiency.
+
+## Documentation
+- Write comments to explain **intent** and **trade-offs** (the "Why"), not obvious mechanics (the "How").
+- Maintain ADRs in `docs/adr/` for significant architectural pivots.

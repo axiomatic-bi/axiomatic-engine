@@ -1,0 +1,19 @@
+---
+description: Rules for maintaining the agnostic nature of the Axiomatic Engine
+alwaysApply: true
+---
+
+# Engine Agnosticism Standards
+
+## The Great Wall
+- Code in `src/axiomatic_engine/` must NEVER reference specific datasets (e.g., "IMDb"), client names, or hardcoded external URLs.
+- If a project requires specific logic (like a specific TSV delimiter), it must be passed as a configuration parameter to the Engine.
+
+## Dependency Direction
+- The Engine should never import from an external project. 
+- Projects (e.g., `imdb_project/`) import from the Engine.
+- The Engine is a library; treat it like `pandas` or `requests`.
+
+## Factory Isolation
+- All Adapter instantiations (Storage/Warehouse) must occur via `axiomatic_engine.adapters.factory`.
+- Use `Literal` types (e.g., `WarehouseKind`) to strictly define available engine capabilities.

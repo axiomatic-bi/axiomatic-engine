@@ -1,0 +1,269 @@
+version: 2
+
+sources:
+  - name: nhs_rtt_bronze_ingest
+    schema: "{{ env_var('AXIOMATIC_SCHEMA_BRONZE', 'bronze') }}"
+    tables:
+      - name: rtt_commissioner_apr24
+        description: "RTT commissioner-level data for April 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_may24
+        description: "RTT commissioner-level data for May 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jun24
+        description: "RTT commissioner-level data for June 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jul24
+        description: "RTT commissioner-level data for July 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_aug24
+        description: "RTT commissioner-level data for August 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_sep24
+        description: "RTT commissioner-level data for September 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_oct24
+        description: "RTT commissioner-level data for October 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_nov24
+        description: "RTT commissioner-level data for November 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_dec24
+        description: "RTT commissioner-level data for December 2024"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_jan25
+        description: "RTT commissioner-level data for January 2025"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_feb25
+        description: "RTT commissioner-level data for February 2025"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+      - name: rtt_commissioner_mar25
+        description: "RTT commissioner-level data for March 2025"
+        columns:
+          - name: Period
+            tests:
+              - not_null
+          - name: Commissioner Org Code
+            tests:
+              - not_null
+
+models:
+  # Silver layer tests
+  - name: stg_rtt_commissioner
+    description: "Silver staging for RTT commissioner data"
+    columns:
+      - name: period
+        tests:
+          - not_null
+      - name: commissioner_org_code
+        tests:
+          - not_null
+
+  - name: int_rtt_metrics_by_commissioner
+    description: "Commissioner-level metrics with derived breach counts"
+    columns:
+      - name: period
+        tests:
+          - not_null
+      - name: commissioner_org_code
+        tests:
+          - not_null
+      - name: rtt_part_type
+        tests:
+          - not_null
+      - name: total_waiting_list
+        tests:
+          - not_null
+
+  - name: int_icb_waiting_metrics
+    description: "ICB-level aggregated waiting metrics"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - icb_code
+            - period
+    columns:
+      - name: period
+        tests:
+          - not_null
+      - name: icb_code
+        tests:
+          - not_null
+      - name: total_waiting_list
+        tests:
+          - not_null
+
+  - name: int_icb_benchmarks
+    description: "Official England and regional benchmark totals from source"
+    columns:
+      - name: period
+        tests:
+          - not_null
+      - name: level_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['England', 'Region']
+      - name: level_code
+        tests:
+          - not_null
+
+  # Gold dimension tests
+  - name: dim_icb
+    description: "ICB dimension (SK=BK pattern)"
+    columns:
+      - name: icb_code
+        tests:
+          - not_null
+          - unique
+      - name: icb_name
+        tests:
+          - not_null
+      - name: org_level
+        tests:
+          - accepted_values:
+              values: ['ICB']
+
+  - name: dim_period
+    description: "Period dimension (SK=BK pattern)"
+    columns:
+      - name: period
+        tests:
+          - not_null
+          - unique
+      - name: period_year
+        tests:
+          - not_null
+      - name: period_month
+        tests:
+          - not_null
+
+  - name: dim_rtt_pathway
+    description: "RTT pathway type dimension"
+    columns:
+      - name: rtt_part_type
+        tests:
+          - not_null
+          - unique
+      - name: pathway_category
+        tests:
+          - accepted_values:
+              values: ['Incomplete', 'Completed', 'New Periods', 'Other']
+
+  # Gold fact tests
+  - name: fct_icb_waiting_times
+    description: "Star schema fact table for ICB waiting times"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - period
+            - icb_code
+            - rtt_part_type
+    columns:
+      - name: period
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_period')
+              field: period
+      - name: icb_code
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_icb')
+              field: icb_code
+      - name: rtt_part_type
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_rtt_pathway')
+              field: rtt_part_type
+      - name: total_waiting_list
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+      - name: pct_within_18_weeks
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+      - name: long_wait_tail_index
+        description: "Custom metric emphasizing 52+ week tail concentration"
