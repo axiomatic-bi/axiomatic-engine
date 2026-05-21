@@ -2,7 +2,7 @@ from __future__ import annotations
 import dlt
 from datetime import datetime, timezone
 from typing import Any, Iterable, cast
-from axiomatic_engine.contracts.source import ResourceLoadHints, ResourceProtocol, SourceProtocol
+from axiomatic_engine.contracts.source import CheckpointableResource, ResourceLoadHints, ResourceProtocol, SourceProtocol
 
 class BaseResource:
     """
@@ -99,3 +99,24 @@ class BaseSource:
 
     def get_resources(self) -> list[ResourceProtocol]:
         return self._logic.get_resources()
+
+    def get_checkpointable_resources(self) -> list[CheckpointableResource]:
+        """
+        Return the subset of this source's resources that support ETag-based
+        checkpointing.  The default is empty (no checkpointing).
+
+        Override in source subclasses whose resources implement
+        CheckpointableResource (i.e. have a fetch_etag() method).
+        """
+        return []
+
+    def supports_storage_cache(self) -> bool:
+        """
+        Returns True if this source writes files to local storage that can be
+        used as a cache signal by _resolve_source_to_run().
+
+        Override to return False for sources (e.g. HTTP) that never write to
+        local storage, so the pipeline always runs ingestion rather than
+        incorrectly skipping it.
+        """
+        return True

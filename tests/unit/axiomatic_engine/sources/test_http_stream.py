@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import io
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from axiomatic_engine.contracts.source import ResourceLoadHints
 from axiomatic_engine.sources.file.http_stream import (
@@ -170,6 +170,91 @@ class HttpStreamSourceTests(unittest.TestCase):
         self.assertEqual(resources[0].name, "title_basics")
         self.assertEqual(resources[0].timeout_seconds, 12.5)
         self.assertEqual(resources[0].get_load_hints().write_disposition, "replace")
+
+
+    def test_http_stream_source_does_not_support_storage_cache(self) -> None:
+        source = HttpStreamSource(name="test_source", resource_map={"res": "http://example.com/data.csv"})
+        self.assertFalse(source.supports_storage_cache())
+
+    def test_with_filtered_resources_returns_subset(self) -> None:
+        definition = HttpFileSourceDefinition(
+            kind="http_file",
+            name="my_source",
+            resources=[
+                HttpFileResourceDefinition(name="res_a", url="http://example.com/a.csv"),
+                HttpFileResourceDefinition(name="res_b", url="http://example.com/b.csv"),
+                HttpFileResourceDefinition(name="res_c", url="http://example.com/c.csv"),
+            ],
+        )
+        source = HttpStreamSource.from_definition(definition=definition)
+        filtered = source.with_filtered_resources({"res_a", "res_c"})
+
+        self.assertEqual(filtered.name, "my_source")
+        resource_names = {r.name for r in filtered.get_resources()}
+        self.assertEqual(resource_names, {"res_a", "res_c"})
+
+    def test_with_filtered_resources_empty_set_returns_empty_source(self) -> None:
+        definition = HttpFileSourceDefinition(
+            kind="http_file",
+            name="my_source",
+            resources=[
+                HttpFileResourceDefinition(name="res_a", url="http://example.com/a.csv"),
+            ],
+        )
+        source = HttpStreamSource.from_definition(definition=definition)
+        filtered = source.with_filtered_resources(set())
+        self.assertEqual(filtered.get_resources(), [])
+
+
+class HttpStreamResourceFetchEtagTests(unittest.TestCase):
+    @patch("axiomatic_engine.sources.file.http_stream.requests.head")
+    def test_fetch_etag_returns_etag_header(self, mock_head) -> None:
+        mock_response = MagicMock()
+        mock_response.headers = {"ETag": "\"abc123\""}
+        mock_response.raise_for_status.return_value = None
+        mock_head.return_value = mock_response
+
+        resource = HttpStreamResource(name="res", url="http://example.com/data.csv")
+        result = resource.fetch_etag()
+
+        self.assertEqual(result, "\"abc123\"")
+        mock_head.assert_called_once_with(
+            "http://example.com/data.csv", timeout=30.0, allow_redirects=True
+        )
+
+    @patch("axiomatic_engine.sources.file.http_stream.requests.head")
+    def test_fetch_etag_falls_back_to_last_modified(self, mock_head) -> None:
+        mock_response = MagicMock()
+        mock_response.headers = {"Last-Modified": "Wed, 01 May 2025 00:00:00 GMT"}
+        mock_response.raise_for_status.return_value = None
+        mock_head.return_value = mock_response
+
+        resource = HttpStreamResource(name="res", url="http://example.com/data.csv")
+        result = resource.fetch_etag()
+
+        self.assertEqual(result, "Wed, 01 May 2025 00:00:00 GMT")
+
+    @patch("axiomatic_engine.sources.file.http_stream.requests.head")
+    def test_fetch_etag_returns_none_when_no_cache_headers(self, mock_head) -> None:
+        mock_response = MagicMock()
+        mock_response.headers = {}
+        mock_response.raise_for_status.return_value = None
+        mock_head.return_value = mock_response
+
+        resource = HttpStreamResource(name="res", url="http://example.com/data.csv")
+        result = resource.fetch_etag()
+
+        self.assertIsNone(result)
+
+    @patch("axiomatic_engine.sources.file.http_stream.requests.head")
+    def test_fetch_etag_returns_none_on_request_error(self, mock_head) -> None:
+        import requests as req_lib
+        mock_head.side_effect = req_lib.RequestException("network error")
+
+        resource = HttpStreamResource(name="res", url="http://example.com/data.csv")
+        result = resource.fetch_etag()
+
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

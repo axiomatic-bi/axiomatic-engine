@@ -2,6 +2,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Literal, Protocol, runtime_checkable
 
+
+@runtime_checkable
+class CheckpointableResource(Protocol):
+    """
+    Optional protocol for resources that can provide a cheap cache token.
+
+    Sources whose resources implement this protocol allow the checkpoint
+    system to skip ingestion when the token has not changed since the last run.
+    The token may be an HTTP ETag, Last-Modified header, file mtime, etc.
+    """
+
+    name: str
+
+    def fetch_etag(self) -> str | None:
+        """
+        Return a cache token for this resource, or None if unavailable.
+        A None return value is treated as "always ingest".
+        """
+        ...
+
 SourceKind = Literal["rest_api", "http_file"]
 WriteDisposition = Literal["append", "replace", "merge"]
 SchemaEvolutionMode = Literal["auto", "strict", "discard"]
