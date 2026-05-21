@@ -6,7 +6,7 @@ Use this template when converting planning docs to GitHub issues.
 ---
 <!-- Frontmatter for tracking -->
 phase: 1 | 2 | 3 | 4 | 5 | 6 | 7
-estimated_hours: 
+estimated_hours:
 dependencies: #issue_numbers
 ---
 
@@ -29,12 +29,12 @@ Relevant decisions: `docs/plans/decisions/...`
 ## Review Request
 <!-- Fill this in when moving to review -->
 @reviewer Please check:
-1. 
-2. 
+1.
+2.
 
 ## Related
-- Planning doc: 
-- Decision record: 
+- Planning doc:
+- Decision record:
 - Previous related issue: #
 ```
 

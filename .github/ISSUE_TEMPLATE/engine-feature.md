@@ -23,5 +23,5 @@ assignees: ''
 <!-- Technical implementation details -->
 
 ## Related
-- Planning doc: 
+- Planning doc:
 - Previous related work: #

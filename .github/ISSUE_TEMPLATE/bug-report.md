@@ -10,9 +10,9 @@ assignees: ''
 <!-- What happened? -->
 
 ## Steps to Reproduce
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behaviour
 <!-- What should have happened? -->
@@ -21,9 +21,9 @@ assignees: ''
 <!-- What actually happened? -->
 
 ## Environment
-- OS: 
-- Python version: 
-- Package version: 
+- OS:
+- Python version:
+- Package version:
 
 ## Logs/Traceback
 ```

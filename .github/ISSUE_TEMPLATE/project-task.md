@@ -26,5 +26,5 @@ assignees: ''
 - [ ] Blocked by: #
 
 ## Related
-- Project plan: 
+- Project plan:
 - Engine feature (if applicable): #
