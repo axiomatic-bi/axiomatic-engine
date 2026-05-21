@@ -76,7 +76,7 @@ source:
 
 warehouse:
   kind: duckdb
-  path: "${AXIOMATIC_WAREHOUSE_PATH}"
+  path: "${AXIOMATIC_WAREHOUSE_PATH:./data/warehouse.duckdb}"
 
 schema:
   bronze: "${AXIOMATIC_SCHEMA_BRONZE:bronze}"
