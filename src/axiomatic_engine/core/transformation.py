@@ -7,6 +7,7 @@ from pathlib import Path
 from axiomatic_engine.contracts.transformation import (
     TransformationProtocol,
     TransformationRequest,
+    TransformationResult,
 )
 from axiomatic_engine.contracts.warehouse import WarehouseKind
 
@@ -28,7 +29,7 @@ class Transformer:
         self.warehouse_kind: WarehouseKind = warehouse_kind
         self.project_dir = Path(project_dir)
 
-    def run(self) -> None:
+    def run(self) -> TransformationResult:
         LOGGER.info("Running transformations using backend: %s", self.adapter.kind)
         result = self.adapter.run(
             request=TransformationRequest(
@@ -41,3 +42,4 @@ class Transformer:
             raise RuntimeError(
                 f"Transformation stage failed with backend {result.backend}: {result.details}"
             )
+        return result

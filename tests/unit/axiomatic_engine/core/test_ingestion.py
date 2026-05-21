@@ -16,6 +16,7 @@ class IngestorTests(unittest.TestCase):
         source = Mock()
         source.name = "fake_store_bronze_ingest"
         source.to_dlt.return_value = "dlt_source"
+        source.get_resources.return_value = []
 
         mock_pipeline = Mock()
         mock_pipeline.run.return_value = {"status": "ok"}
@@ -49,6 +50,7 @@ class IngestorTests(unittest.TestCase):
         source = Mock()
         source.name = "fake_store_bronze_ingest"
         source.to_dlt.return_value = "dlt_source"
+        source.get_resources.return_value = []
 
         mock_pipeline = Mock()
         mock_pipeline.run.return_value = {"status": "ok"}
