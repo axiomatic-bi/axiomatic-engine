@@ -159,26 +159,45 @@ class HttpStreamResource(ResourceProtocol):
         Returns the ETag header value if present, falling back to
         Last-Modified, or None if neither is available.  Used by the
         checkpoint system to decide whether to skip ingestion.
-        """
-        try:
-            response = requests.head(
-                self.url, timeout=self.timeout_seconds, allow_redirects=True
-            )
-            response.raise_for_status()
-        except requests.RequestException as exc:
-            LOGGER.warning(
-                "HEAD request failed for '%s' (%s). Treating as changed.",
-                self.name,
-                exc,
-            )
-            return None
 
-        etag = response.headers.get("ETag")
-        if etag:
-            return etag
-        last_modified = response.headers.get("Last-Modified")
-        if last_modified:
-            return last_modified
+        Retries transient failures once after a short delay.
+        """
+        import time
+
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                response = requests.head(
+                    self.url, timeout=self.timeout_seconds, allow_redirects=True
+                )
+                response.raise_for_status()
+
+                etag = response.headers.get("ETag")
+                if etag:
+                    return etag
+                last_modified = response.headers.get("Last-Modified")
+                if last_modified:
+                    return last_modified
+                return None
+
+            except requests.RequestException as exc:
+                if attempt < max_retries - 1:
+                    LOGGER.debug(
+                        "HEAD request failed for '%s' (attempt %d/%d): %s. Retrying...",
+                        self.name,
+                        attempt + 1,
+                        max_retries,
+                        exc,
+                    )
+                    time.sleep(0.5 * (attempt + 1))  # 0.5s, then 1.0s
+                else:
+                    LOGGER.warning(
+                        "HEAD request failed for '%s' after %d attempts (%s). Treating as changed.",
+                        self.name,
+                        max_retries,
+                        exc,
+                    )
+                    return None
         return None
 
     def read(self) -> Iterable[dict[str, Any]]:

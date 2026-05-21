@@ -37,7 +37,7 @@ DO UPDATE SET
 """
 
 _SELECT_SQL = f"""
-SELECT etag, content_hash
+SELECT etag, content_hash, last_loaded_at
 FROM   {_QUALIFIED_TABLE}
 WHERE  source_name = ?
   AND  resource_name = ?
@@ -84,11 +84,15 @@ class CheckpointStore:
         rows = self._warehouse.execute(_SELECT_SQL, [source_name, resource_name])
         if not rows:
             return None
-        etag, content_hash = rows[0]
+        etag, content_hash, loaded_at_str = rows[0]
+        try:
+            loaded_at = datetime.fromisoformat(loaded_at_str)
+        except (ValueError, TypeError):
+            loaded_at = datetime.now(timezone.utc)
         return ResourceCheckpoint(
             source_name=source_name,
             resource_name=resource_name,
-            last_loaded_at=datetime.now(timezone.utc),
+            last_loaded_at=loaded_at,
             etag=etag,
             content_hash=content_hash,
         )

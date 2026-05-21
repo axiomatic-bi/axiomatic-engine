@@ -19,7 +19,9 @@ This portfolio project demonstrates the Axiomatic Engine's capabilities for publ
 
 ```
 projects/nhs_inequality/
-├── run_pipeline.py               # Entrypoint for ingestion
+├── pipeline.yml                   # Declarative pipeline config (NEW)
+├── env-template                   # Environment variables template
+├── run_pipeline.py               # Legacy Python entrypoint (escape hatch)
 ├── dbt_project/
 │   ├── dbt_project.yml            # dbt configuration
 │   ├── profiles.yml               # DuckDB connection
@@ -69,27 +71,36 @@ projects/nhs_inequality/
 
 ## Usage
 
-Run the pipeline (ingestion only):
+This project uses the declarative `pipeline.yml` workflow. Set up your environment first:
+
 ```bash
-uv run projects/nhs_inequality/run_pipeline.py --skip-transforms
+cp env-template .env
+# Edit .env with your configuration (or use defaults)
 ```
 
-Run with dbt transforms:
+Run the full pipeline (ingestion + transforms):
 ```bash
-uv run projects/nhs_inequality/run_pipeline.py --run-transforms \
-  --dbt-project-dir ./projects/nhs_inequality/dbt_project \
-  --dbt-profiles-dir ./projects/nhs_inequality/dbt_project \
-  --dbt-profile-name nhs_inequality
+axiomatic-engine run --config pipeline.yml
 ```
 
-Run with dbt tests:
+Run ingestion only (to test data loads before SQL models):
 ```bash
-uv run projects/nhs_inequality/run_pipeline.py --run-transforms \
-  --dbt-project-dir ./projects/nhs_inequality/dbt_project \
-  --dbt-profiles-dir ./projects/nhs_inequality/dbt_project \
-  --dbt-profile-name nhs_inequality \
-  --dbt-run-tests
+axiomatic-engine run --config pipeline.yml --skip-transforms
 ```
+
+Force re-download all sources (ignore checkpoint cache):
+```bash
+axiomatic-engine run --config pipeline.yml --force-reload
+```
+
+Generate staging model for a source:
+```bash
+axiomatic-engine generate-staging --config pipeline.yml --source nhs_rtt_bronze_ingest --resource rtt_commissioner_apr24
+```
+
+### Legacy Python Script (Escape Hatch)
+
+The original `run_pipeline.py` is preserved as an example of imperative pipeline construction for advanced use cases requiring programmatic resource selection.
 
 ## Phase Status
 

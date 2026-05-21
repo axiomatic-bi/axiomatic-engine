@@ -17,3 +17,4 @@ AXIOMATIC_SCHEMA_ANALYTICS=analytics
 # dbt configuration
 AXIOMATIC_DBT_PROJECT_DIR=./dbt_project
 AXIOMATIC_DBT_PROFILES_DIR=./dbt_project
+AXIOMATIC_DBT_PROFILE_NAME=nhs_inequality

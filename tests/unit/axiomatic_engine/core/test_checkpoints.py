@@ -42,13 +42,15 @@ class CheckpointStoreGetTests(unittest.TestCase):
 
     def test_get_returns_checkpoint_with_etag(self) -> None:
         store, warehouse = _make_store()
-        warehouse.execute.return_value = [("\"abc123\"", None)]
+        loaded_at = datetime(2025, 5, 1, 12, 0, 0, tzinfo=timezone.utc)
+        warehouse.execute.return_value = [("\"abc123\"", None, loaded_at.isoformat())]
         result = store.get(source_name="nhs", resource_name="apr24")
         self.assertIsNotNone(result)
         self.assertEqual(result.source_name, "nhs")
         self.assertEqual(result.resource_name, "apr24")
         self.assertEqual(result.etag, "\"abc123\"")
         self.assertIsNone(result.content_hash)
+        self.assertEqual(result.last_loaded_at, loaded_at)
 
     def test_get_passes_correct_parameters(self) -> None:
         store, warehouse = _make_store()
