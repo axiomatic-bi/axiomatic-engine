@@ -10,7 +10,7 @@ alwaysApply: true
 - If a project requires specific logic (like a specific TSV delimiter), it must be passed as a configuration parameter to the Engine.
 
 ## Dependency Direction
-- The Engine should never import from an external project. 
+- The Engine should never import from an external project.
 - Projects (e.g., `imdb_project/`) import from the Engine.
 - The Engine is a library; treat it like `pandas` or `requests`.
 
