@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -51,16 +52,20 @@ class DbtTransformationAdapter(TransformationProtocol):
                 text=True,
             )
             if completed.returncode != 0:
+                run_results = self._read_run_results()
+                details: dict[str, str] = {
+                    "command": " ".join(command),
+                    "return_code": str(completed.returncode),
+                    "stdout": self._sanitise_error_output(completed.stdout),
+                    "stderr": self._sanitise_error_output(completed.stderr),
+                }
+                if run_results is not None:
+                    details["run_results_json"] = json.dumps(run_results)
                 return TransformationResult(
                     backend=self.kind,
                     status="failed",
                     duration_seconds=perf_counter() - start,
-                    details={
-                        "command": " ".join(command),
-                        "return_code": str(completed.returncode),
-                        "stdout": self._sanitise_error_output(completed.stdout),
-                        "stderr": self._sanitise_error_output(completed.stderr),
-                    },
+                    details=details,
                 )
 
         return TransformationResult(
@@ -148,6 +153,17 @@ class DbtTransformationAdapter(TransformationProtocol):
             return
 
         environment["AXIOMATIC_WAREHOUSE_PATH"] = str(Path(warehouse_path).expanduser().resolve())
+
+    def _read_run_results(self) -> dict | None:
+        """
+        Parse dbt's target/run_results.json if it exists.
+        Returns None silently if the file is absent or unparseable.
+        """
+        run_results_path = self.project_dir / "target" / "run_results.json"
+        try:
+            return json.loads(run_results_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
 
     def _sanitise_error_output(self, raw_output: object) -> str:
         redacted = str(raw_output or "").strip()

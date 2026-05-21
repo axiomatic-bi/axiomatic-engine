@@ -13,6 +13,7 @@ from typing import Any, BinaryIO, IO, Iterable, Literal, cast
 import requests
 
 from axiomatic_engine.contracts.source import (
+    CheckpointableResource,
     ResourceLoadHints,
     ResourceProtocol,
     SourceKind,
@@ -151,6 +152,54 @@ class HttpStreamResource(ResourceProtocol):
             member_data = zf.read(member_name)
             return io.BytesIO(member_data)
 
+    def fetch_etag(self) -> str | None:
+        """
+        Perform a cheap HTTP HEAD request and return a cache token.
+
+        Returns the ETag header value if present, falling back to
+        Last-Modified, or None if neither is available.  Used by the
+        checkpoint system to decide whether to skip ingestion.
+
+        Retries transient failures once after a short delay.
+        """
+        import time
+
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                response = requests.head(
+                    self.url, timeout=self.timeout_seconds, allow_redirects=True
+                )
+                response.raise_for_status()
+
+                etag = response.headers.get("ETag")
+                if etag:
+                    return etag
+                last_modified = response.headers.get("Last-Modified")
+                if last_modified:
+                    return last_modified
+                return None
+
+            except requests.RequestException as exc:
+                if attempt < max_retries - 1:
+                    LOGGER.debug(
+                        "HEAD request failed for '%s' (attempt %d/%d): %s. Retrying...",
+                        self.name,
+                        attempt + 1,
+                        max_retries,
+                        exc,
+                    )
+                    time.sleep(0.5 * (attempt + 1))  # 0.5s, then 1.0s
+                else:
+                    LOGGER.warning(
+                        "HEAD request failed for '%s' after %d attempts (%s). Treating as changed.",
+                        self.name,
+                        max_retries,
+                        exc,
+                    )
+                    return None
+        return None
+
     def read(self) -> Iterable[dict[str, Any]]:
         """Streams data according to the configured format."""
         LOGGER.info(
@@ -208,9 +257,7 @@ class HttpStreamSource(BaseSource):
 
     @classmethod
     def from_definition(cls, definition: HttpFileSourceDefinition) -> HttpStreamSource:
-        resource_map = {resource.name: resource.url for resource in definition.resources}
-        source = cls(name=definition.name, resource_map=resource_map)
-        source._resources = [
+        resources: list[ResourceProtocol] = [
             HttpStreamResource(
                 name=resource.name,
                 url=resource.url,
@@ -224,7 +271,7 @@ class HttpStreamSource(BaseSource):
             )
             for resource in definition.resources
         ]
-        return source
+        return cls._from_resources(name=definition.name, resources=resources)
 
     def get_resources(self) -> list[ResourceProtocol]:
         prebuilt_resources = getattr(self, "_resources", None)
@@ -234,6 +281,39 @@ class HttpStreamSource(BaseSource):
             HttpStreamResource(name, url)
             for name, url in self._resource_map.items()
         ]
+
+    @classmethod
+    def _from_resources(
+        cls, name: str, resources: list[ResourceProtocol]
+    ) -> HttpStreamSource:
+        """
+        Private constructor that builds an HttpStreamSource from a pre-built
+        resource list, bypassing the resource_map path entirely.
+        """
+        instance = cls.__new__(cls)
+        instance.name = name
+        instance.kind = "http_file"
+        instance._resource_map = {}
+        instance._resources = resources
+        BaseSource.__init__(instance, source_logic=instance)
+        return instance
+
+    def with_filtered_resources(self, names: set[str]) -> HttpStreamSource:
+        """
+        Return a new HttpStreamSource containing only the resources whose
+        names appear in *names*.  Used by the checkpoint system to run dlt
+        only over resources that have changed since the last load.
+        """
+        kept = [r for r in self.get_resources() if r.name in names]
+        return HttpStreamSource._from_resources(name=self.name, resources=kept)
+
+    def get_checkpointable_resources(self) -> list[CheckpointableResource]:
+        return [
+            r for r in self.get_resources() if isinstance(r, HttpStreamResource)
+        ]
+
+    def supports_storage_cache(self) -> bool:
+        return False
 
     def get_incremental_key(self) -> str | None:
         return None

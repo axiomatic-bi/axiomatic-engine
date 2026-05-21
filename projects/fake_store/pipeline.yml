@@ -1,0 +1,39 @@
+source:
+  kind: rest_api
+  name: fake_store_bronze_ingest
+  base_url: "${FAKE_STORE_API_URL:https://fakestoreapi.com}"
+  resources:
+    - name: products
+      endpoint: products
+      load_hints:
+        write_disposition: merge
+        primary_key: id
+        schema_evolution_mode: auto
+
+    - name: carts
+      endpoint: carts
+      load_hints:
+        write_disposition: replace
+        schema_evolution_mode: auto
+
+    - name: users
+      endpoint: users
+      load_hints:
+        write_disposition: merge
+        primary_key: id
+        schema_evolution_mode: auto
+
+warehouse:
+  kind: duckdb
+  path: "${AXIOMATIC_WAREHOUSE_PATH:./data/warehouse.duckdb}"
+
+schema:
+  bronze: "${AXIOMATIC_SCHEMA_BRONZE:bronze}"
+  silver: "${AXIOMATIC_SCHEMA_SILVER:silver}"
+  gold: "${AXIOMATIC_SCHEMA_GOLD:gold}"
+
+transform:
+  enabled: true
+  dbt_project_dir: ./dbt_project
+  dbt_profiles_dir: ./dbt_project
+  dbt_profile_name: fake_store

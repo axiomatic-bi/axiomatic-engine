@@ -5,6 +5,7 @@ from typing import Any
 import dlt
 
 from axiomatic_engine.contracts.warehouse import WarehouseProtocol
+from axiomatic_engine.core.report import IngestionReport, ResourceIngestionResult
 from axiomatic_engine.sources.base import BaseSource
 
 LOGGER = logging.getLogger(__name__)
@@ -26,11 +27,12 @@ class Ingestor:
         self.warehouse = warehouse
         self.dlt_pipelines_dir = dlt_pipelines_dir
 
-    def run(self, source: BaseSource, dataset_name: str):
+    def run(self, source: BaseSource, dataset_name: str) -> IngestionReport:
         """
         Executes the ingestion pipeline.
 
         Triggers dlt loading using destination config from the warehouse adapter.
+        Returns an IngestionReport with per-resource row counts and timing.
         """
         LOGGER.info("Starting ingestion for source: %s", source.name)
 
@@ -54,7 +56,7 @@ class Ingestor:
             source.name,
         )
         load_start = perf_counter()
-        load_info = pipeline.run(
+        pipeline.run(
             source.to_dlt(),
             destination=destination,
             credentials=credentials,
@@ -65,4 +67,33 @@ class Ingestor:
             source.name,
             duration_s,
         )
-        return load_info
+
+        row_counts = self._extract_row_counts(pipeline)
+        resources = [
+            ResourceIngestionResult(
+                name=res.name,
+                status="loaded",
+                row_count=row_counts.get(res.name),
+            )
+            for res in source.get_resources()
+        ]
+        return IngestionReport(
+            source_name=source.name,
+            resources=resources,
+            duration_seconds=duration_s,
+        )
+
+    @staticmethod
+    def _extract_row_counts(pipeline: Any) -> dict[str, int]:
+        """
+        Pull per-table row counts from dlt's normalisation trace.
+        Returns an empty dict if trace information is unavailable.
+        """
+        try:
+            normalize_info = pipeline.last_trace.last_normalize_info
+            if normalize_info is None:
+                return {}
+            counts = normalize_info.row_counts
+            return {k: v for k, v in counts.items() if not k.startswith("_dlt")}
+        except Exception:  # noqa: BLE001
+            return {}

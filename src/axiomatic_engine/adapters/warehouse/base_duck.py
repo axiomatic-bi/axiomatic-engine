@@ -7,7 +7,7 @@ from typing import Any
 import duckdb
 
 from axiomatic_engine.contracts.storage import RawFileRef
-from axiomatic_engine.contracts.warehouse import WarehouseProtocol
+from axiomatic_engine.contracts.warehouse import ColumnInfo, WarehouseProtocol
 
 
 class DuckCompatibleWarehouseBase(WarehouseProtocol, ABC):
@@ -75,6 +75,41 @@ class DuckCompatibleWarehouseBase(WarehouseProtocol, ABC):
                 counts[table_name] = row[0] if row else 0
 
         return counts
+
+    def introspect_schema(
+        self,
+        schema: str,
+        table: str,
+    ) -> list[ColumnInfo]:
+        """
+        Return column metadata for a table using DuckDB DESCRIBE.
+
+        DuckDB DESCRIBE returns rows: (column_name, column_type, null, key, default, extra)
+        Raises ValueError if the table does not exist.
+        """
+        schema_id = _quote_identifier(schema)
+        table_id = _quote_identifier(table)
+
+        self._prepare_connection_target()
+        with duckdb.connect(self.path) as conn:
+            try:
+                rows = conn.execute(
+                    f"DESCRIBE {schema_id}.{table_id}"
+                ).fetchall()
+            except duckdb.CatalogException as exc:
+                raise ValueError(
+                    f"Table '{schema}.{table}' does not exist in warehouse at '{self.path}'. "
+                    "Run ingestion first."
+                ) from exc
+
+        return [
+            ColumnInfo(
+                name=row[0],
+                data_type=row[1],
+                is_nullable=(str(row[2]).upper() == "YES"),
+            )
+            for row in rows
+        ]
 
 
 def _quote_identifier(identifier: str) -> str:

@@ -15,6 +15,7 @@ The pipeline follows a medallion flow:
 
 ```text
 projects/fake_store/
+├── pipeline.yml              # Declarative pipeline config (NEW)
 ├── .env.example
 ├── dbt_project/
 │   └── models/
@@ -25,7 +26,7 @@ projects/fake_store/
 ├── src/
 │   ├── definitions.py
 │   └── normalisers.py
-└── run_pipeline.py
+└── run_pipeline.py           # Legacy Python entrypoint (escape hatch)
 ```
 
 ## Runtime Contract
@@ -65,26 +66,31 @@ Key variables:
 
 ## Usage
 
-Run the pipeline from the project root:
+This project uses the declarative `pipeline.yml` workflow.
 
+Run the full pipeline (ingestion + transforms):
 ```bash
-python run_pipeline.py
+axiomatic-engine run --config pipeline.yml
 ```
 
-When enabled, the pipeline performs ingestion first, then runs dbt transformations.
-
-For local validation from the project folder:
-
+Run ingestion only:
 ```bash
-../../.venv/Scripts/dbt.exe deps --project-dir ./dbt_project --profiles-dir ./dbt_project --profile fake_store
-../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
-../../.venv/Scripts/python.exe run_pipeline.py --force-reload --skip-transforms
+axiomatic-engine run --config pipeline.yml --skip-transforms
 ```
 
-Set `AXIOMATIC_DLT_PIPELINES_DIR=./.dlt/pipelines` to keep dlt runtime state local to
-this project and avoid path drift when moving the repository directory.
+Force re-download all data:
+```bash
+axiomatic-engine run --config pipeline.yml --force-reload
+```
 
-The pair of ingestion runs above should be idempotent for `products` and `users` and deterministic for `carts`.
+Generate staging model:
+```bash
+axiomatic-engine generate-staging --config pipeline.yml --source fake_store_bronze_ingest --resource products
+```
+
+### Legacy Python Script (Escape Hatch)
+
+The original `run_pipeline.py` is preserved as an example of imperative pipeline construction for advanced use cases requiring programmatic control or custom authentication hooks.
 
 ## Development Notes
 

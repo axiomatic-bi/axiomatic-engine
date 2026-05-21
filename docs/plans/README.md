@@ -90,7 +90,7 @@ Format: `NNN-title.md`
 
 ### Bootstrap for New Chat
 ```
-Working on NHS inequality project v1. 
+Working on NHS inequality project v1.
 Phase 1 complete (ZIP streaming in http_stream.py).
 Starting Phase 2 per docs/plans/current/nhs-inequality-v1.md.
 Branch: feat/1-zip-streaming
@@ -98,7 +98,7 @@ Branch: feat/1-zip-streaming
 
 ---
 
-**Next Steps**: 
+**Next Steps**:
 1. Push `feat/1-zip-streaming` branch
 2. Create GitHub issue #1 (retroactively) or PR directly
 3. Start Phase 2: Create `projects/nhs_inequality/` structure
