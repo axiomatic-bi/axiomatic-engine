@@ -86,11 +86,13 @@ name = "axiomatic-engine"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "dbt-duckdb" },
     { name = "dlt", extra = ["motherduck"] },
     { name = "duckdb" },
     { name = "fastmcp" },
     { name = "psutil" },
+    { name = "pyyaml" },
     { name = "requests" },
 ]
 
@@ -106,11 +108,13 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.1.0" },
     { name = "dbt-duckdb", specifier = ">=1.10.1" },
     { name = "dlt", extras = ["motherduck"], specifier = ">=1.25.0" },
     { name = "duckdb", specifier = ">=1.5.2" },
     { name = "fastmcp", specifier = ">=3.2.4" },
     { name = "psutil", specifier = ">=7.2.2" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.33.1" },
 ]
 

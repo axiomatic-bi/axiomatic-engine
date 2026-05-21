@@ -1,8 +1,21 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Protocol, Any, runtime_checkable, Literal
 from axiomatic_engine.contracts.storage import RawFileRef
 
 WarehouseKind = Literal["duckdb", "motherduck", "bigquery"]
+
+
+@dataclass(frozen=True)
+class ColumnInfo:
+    """
+    Metadata for a single column returned by schema introspection.
+    """
+
+    name: str
+    data_type: str
+    is_nullable: bool = True
+
 
 @runtime_checkable
 class WarehouseProtocol(Protocol):
@@ -46,5 +59,17 @@ class WarehouseProtocol(Protocol):
         """
         A high-level method to move data from Storage to Warehouse.
         Replaces 'load_bronze_tables' with a general-purpose loader.
+        """
+        ...
+
+    def introspect_schema(
+        self,
+        schema: str,
+        table: str,
+    ) -> list[ColumnInfo]:
+        """
+        Return column metadata for a table in the given schema.
+
+        Raises ValueError if the table does not exist.
         """
         ...
